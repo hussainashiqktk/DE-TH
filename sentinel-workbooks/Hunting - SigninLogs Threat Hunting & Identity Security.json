@@ -1,0 +1,2932 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🛡️ Identity Threat Hunting & Security Workbook v2.0\n\n**Purpose:** Advanced threat hunting, anomaly detection, and security monitoring for Azure AD/Entra ID sign-in activities.\n\n| Category | Capabilities |\n|----------|-------------|\n| 🔴 **Credential Attacks** | Brute Force, Password Spray, Credential Stuffing |\n| 🟠 **MFA Bypass** | MFA Fatigue/Bombing, AiTM Phishing, Token Theft |\n| 🟡 **Anomaly Detection** | Behavioral Anomalies, Statistical Deviation, Peer Analysis |\n| 🌍 **Geographic Threats** | Impossible Travel, Risky Locations, VPN/Tor Detection |\n| 👤 **Privileged Accounts** | Admin Sign-in Monitoring, Elevation Detection |\n| 🤖 **Service Principals** | App Authentication, Managed Identity Monitoring |\n| 📊 **Risk Analytics** | Identity Protection, Threat Intelligence Correlation |\n| 🔐 **Authentication Health** | MFA Coverage, Legacy Auth, Conditional Access |\n\n---\n**Version:** 2.0 | **Last Updated:** 2025-01 | **Data Sources:** SigninLogs, AADServicePrincipalSignInLogs, AADNonInteractiveUserSignInLogs, IdentityInfo, ThreatIntelligenceIndicator, BehaviorAnalytics"
+      },
+      "name": "text - header",
+      "id": "6202301f-5152-4f2d-8338-d82a2108c6dc"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Workspace",
+            "type": 5,
+            "isRequired": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "resourceTypeFilter": {
+                "microsoft.operationalinsights/workspaces": true
+              },
+              "additionalResourceOptions": [
+                "value::1"
+              ],
+              "showDefault": false
+            },
+            "defaultValue": "value::1"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000,
+                  "label": "Last 1 hour"
+                },
+                {
+                  "durationMs": 14400000,
+                  "label": "Last 4 hours"
+                },
+                {
+                  "durationMs": 43200000,
+                  "label": "Last 12 hours"
+                },
+                {
+                  "durationMs": 86400000,
+                  "label": "Last 24 hours"
+                },
+                {
+                  "durationMs": 259200000,
+                  "label": "Last 3 days"
+                },
+                {
+                  "durationMs": 604800000,
+                  "label": "Last 7 days"
+                },
+                {
+                  "durationMs": 1209600000,
+                  "label": "Last 14 days"
+                },
+                {
+                  "durationMs": 2592000000,
+                  "label": "Last 30 days"
+                }
+              ],
+              "allowCustom": true
+            },
+            "defaultValue": {
+              "durationMs": 604800000
+            },
+            "label": "Time Range",
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000003",
+            "version": "KqlParameterItem/1.0",
+            "name": "FailureThreshold",
+            "type": 1,
+            "isRequired": true,
+            "value": "10",
+            "label": "Failure Threshold"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000004",
+            "version": "KqlParameterItem/1.0",
+            "name": "BaselineDays",
+            "type": 1,
+            "isRequired": true,
+            "value": "30",
+            "label": "Baseline Period (Days)"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000005",
+            "version": "KqlParameterItem/1.0",
+            "name": "UserScope",
+            "type": 2,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[{\"value\": \"All\", \"label\": \"All Users\"}, {\"value\": \"Privileged\", \"label\": \"Privileged Users Only\"}, {\"value\": \"Guests\", \"label\": \"Guest Users Only\"}]",
+            "value": "All",
+            "label": "User Scope"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000006",
+            "version": "KqlParameterItem/1.0",
+            "name": "VIPWatchlist",
+            "type": 1,
+            "value": "VIPUsers",
+            "label": "VIP Watchlist Name"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000007",
+            "version": "KqlParameterItem/1.0",
+            "name": "ExcludedIPs",
+            "type": 1,
+            "value": "",
+            "label": "Excluded IPs (comma-separated)"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000008",
+            "version": "KqlParameterItem/1.0",
+            "name": "SelectedUser",
+            "type": 1,
+            "value": "",
+            "label": "Investigate User (UPN)"
+          },
+          {
+            "id": "a1b2c3d4-0001-0001-0001-000000000009",
+            "version": "KqlParameterItem/1.0",
+            "name": "SelectedIP",
+            "type": 1,
+            "value": "",
+            "label": "Investigate IP Address"
+          }
+        ],
+        "style": "pills"
+      },
+      "name": "parameters",
+      "id": "99dc026a-aca6-47b9-81c9-4dcc776899c8"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "tab-executive",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🎯 Executive Summary",
+            "subTarget": "Executive",
+            "style": "link"
+          },
+          {
+            "id": "tab-overview",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Overview",
+            "subTarget": "Overview",
+            "style": "link"
+          },
+          {
+            "id": "tab-bruteforce",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔴 Brute Force",
+            "subTarget": "BruteForce",
+            "style": "link"
+          },
+          {
+            "id": "tab-passwordspray",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🟠 Password Spray",
+            "subTarget": "PasswordSpray",
+            "style": "link"
+          },
+          {
+            "id": "tab-mfabypass",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "⚡ MFA Bypass",
+            "subTarget": "MFABypass",
+            "style": "link"
+          },
+          {
+            "id": "tab-privileged",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "👑 Privileged",
+            "subTarget": "Privileged",
+            "style": "link"
+          },
+          {
+            "id": "tab-geolocation",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🌍 Geolocation",
+            "subTarget": "Geolocation",
+            "style": "link"
+          },
+          {
+            "id": "tab-anomalies",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔍 Anomalies",
+            "subTarget": "Anomalies",
+            "style": "link"
+          },
+          {
+            "id": "tab-serviceprincipal",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🤖 Service Principals",
+            "subTarget": "ServicePrincipal",
+            "style": "link"
+          },
+          {
+            "id": "tab-risk",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "⚠️ Risk & TI",
+            "subTarget": "RiskAnalysis",
+            "style": "link"
+          },
+          {
+            "id": "tab-mfa",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔐 MFA Health",
+            "subTarget": "MFAAnalysis",
+            "style": "link"
+          },
+          {
+            "id": "tab-userinvestigation",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔎 User Investigation",
+            "subTarget": "UserInvestigation",
+            "style": "link"
+          },
+          {
+            "id": "tab-ipinvestigation",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🌐 IP Investigation",
+            "subTarget": "IPInvestigation",
+            "style": "link"
+          },
+          {
+            "id": "tab-remediation",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🛡️ Remediation",
+            "subTarget": "Remediation",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "tabs",
+      "id": "b06f649c-8e18-4b1e-81e9-1733a46a2d86"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🎯 Executive Summary\n\nReal-time identity security posture and critical alerts requiring immediate attention."
+            },
+            "name": "text - executive header",
+            "id": "43df4f23-6625-434c-9781-aa219f635d1f"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Identity Security Risk Score\nSigninLogs\n| where TimeGenerated {TimeRange}\n| summarize \n    TotalSignIns = count(),\n    FailedSignIns = countif(ResultType != \"0\"),\n    HighRiskSignIns = countif(RiskLevelDuringSignIn == \"high\"),\n    MediumRiskSignIns = countif(RiskLevelDuringSignIn == \"medium\"),\n    NoMFALogins = countif(ResultType == \"0\" and AuthenticationRequirement == \"singleFactorAuthentication\")\n| extend RiskScore = toint(min_of(100.0, \n    (toreal(FailedSignIns) / 100.0) * 5.0 +\n    (toreal(HighRiskSignIns) * 10.0) +\n    (toreal(MediumRiskSignIns) * 3.0) +\n    (toreal(NoMFALogins) / 50.0) * 5.0))\n| extend RiskLevel = case(\n    RiskScore >= 80, \"🔴 CRITICAL\",\n    RiskScore >= 60, \"🟠 HIGH\",\n    RiskScore >= 40, \"🟡 MEDIUM\",\n    \"🟢 LOW\")\n| extend FailureRate = iff(TotalSignIns > 0, round(toreal(FailedSignIns) / toreal(TotalSignIns) * 100, 1), 0.0)\n| extend NoMFARate = iff(TotalSignIns > 0, round(toreal(NoMFALogins) / toreal(TotalSignIns) * 100, 1), 0.0)\n| project \n    Metric = pack_array(\"🎯 Risk Score\", \"📊 Risk Level\", \"📈 Total Sign-ins\", \"❌ Failed Sign-ins\", \"⚠️ High Risk\", \"🔓 No MFA %\"),\n    Value = pack_array(RiskScore, 0, TotalSignIns, FailedSignIns, HighRiskSignIns, NoMFARate),\n    DisplayValue = pack_array(tostring(RiskScore), RiskLevel, tostring(TotalSignIns), tostring(FailedSignIns), tostring(HighRiskSignIns), strcat(tostring(NoMFARate), \"%\"))\n| mv-expand Metric to typeof(string), Value to typeof(long), DisplayValue to typeof(string)",
+              "size": 4,
+              "title": "🎯 Identity Security Risk Score",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "DisplayValue",
+                  "formatter": 1,
+                  "formatOptions": {
+                    "compositeBarSettings": {
+                      "labelText": "",
+                      "columnSettings": []
+                    }
+                  }
+                },
+                "secondaryContent": {
+                  "columnMatch": "Value",
+                  "formatter": 4,
+                  "formatOptions": {
+                    "palette": "redGreen",
+                    "compositeBarSettings": {
+                      "labelText": "",
+                      "columnSettings": []
+                    }
+                  }
+                }
+              }
+            },
+            "name": "query - risk score",
+            "id": "6d4fed50-00c9-4aa5-bf04-1054e62227be"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Critical Alerts Summary\nSigninLogs\n| where TimeGenerated {TimeRange}\n| summarize \n    TotalFailed = countif(ResultType != \"0\"),\n    HighRiskSuccess = countif(RiskLevelDuringSignIn == \"high\" and ResultType == \"0\"),\n    MFABlocked = countif(ResultType in (\"50074\", \"50076\", \"500121\")),\n    ImpossibleTravel = countif(RiskEventTypes_V2 has \"impossibleTravel\" or RiskEventTypes_V2 has \"mcasImpossibleTravel\"),\n    AnonIP = countif(RiskEventTypes_V2 has \"anonymizedIPAddress\"),\n    LeakedCreds = countif(RiskEventTypes_V2 has \"leakedCredentials\")\n| project \n    Metric = pack_array(\"❌ Failed Logins\", \"🔴 High Risk Success\", \"🔐 MFA Blocked\", \"✈️ Impossible Travel\", \"🕵️ Anonymous IP\", \"🔑 Leaked Creds\"),\n    Value = pack_array(TotalFailed, HighRiskSuccess, MFABlocked, ImpossibleTravel, AnonIP, LeakedCreds)\n| mv-expand Metric to typeof(string), Value to typeof(long)",
+              "size": 4,
+              "title": "🚨 Critical Alerts",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "red"
+                  },
+                  "numberFormat": {
+                    "unit": 17,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showIcon": true
+              }
+            },
+            "name": "query - critical alerts",
+            "id": "098acb4a-b1b4-4a5e-bd4c-71e569d32a34"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Top 10 Accounts Requiring Immediate Attention\nSigninLogs\n| where TimeGenerated {TimeRange}\n| summarize \n    FailedAttempts = countif(ResultType != \"0\"),\n    SuccessfulRisky = countif(ResultType == \"0\" and RiskLevelDuringSignIn in (\"high\", \"medium\")),\n    NoMFALogins = countif(ResultType == \"0\" and AuthenticationRequirement == \"singleFactorAuthentication\"),\n    UniqueIPs = dcount(IPAddress),\n    UniqueCountries = dcount(tostring(LocationDetails.countryOrRegion)),\n    LastActivity = max(TimeGenerated)\n    by UserPrincipalName\n| extend RiskScore = (FailedAttempts / 10) + (SuccessfulRisky * 20) + (NoMFALogins / 5) + (UniqueCountries * 5)\n| where RiskScore > 10\n| extend Priority = case(\n    SuccessfulRisky > 0, \"🔴 CRITICAL - Risky Success\",\n    FailedAttempts > 100, \"🔴 CRITICAL - Under Attack\",\n    UniqueCountries > 3, \"🟠 HIGH - Multi-Country\",\n    NoMFALogins > 50, \"🟠 HIGH - No MFA\",\n    \"🟡 MEDIUM\"\n)\n| project Priority, UserPrincipalName, RiskScore, FailedAttempts, SuccessfulRisky, NoMFALogins, UniqueCountries, LastActivity\n| order by RiskScore desc\n| take 10",
+              "size": 0,
+              "title": "🎯 Top 10 Accounts Requiring Attention",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "RiskScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  }
+                ]
+              }
+            },
+            "customWidth": "50",
+            "name": "query - top accounts",
+            "id": "15f8f473-ef9b-438a-8b62-ebeaedb3a0b0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Top 10 Malicious IPs\nSigninLogs\n| where TimeGenerated {TimeRange}\n| summarize \n    TotalAttempts = count(),\n    FailedAttempts = countif(ResultType != \"0\"),\n    SuccessfulAttempts = countif(ResultType == \"0\"),\n    TargetedUsers = dcount(UserPrincipalName),\n    RiskyAttempts = countif(RiskLevelDuringSignIn in (\"high\", \"medium\")),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3)\n    by IPAddress\n| extend ThreatScore = (FailedAttempts / 10) + (TargetedUsers * 5) + (RiskyAttempts * 10) + iif(SuccessfulAttempts > 0 and FailedAttempts > 10, 50, 0)\n| where ThreatScore > 20\n| extend ThreatLevel = case(\n    SuccessfulAttempts > 0 and FailedAttempts > 10, \"🔴 CRITICAL - Compromise Likely\",\n    RiskyAttempts > 0, \"🔴 CRITICAL - High Risk\",\n    TargetedUsers > 20, \"🟠 HIGH - Password Spray\",\n    FailedAttempts > 100, \"🟠 HIGH - Brute Force\",\n    \"🟡 MEDIUM\"\n)\n| project ThreatLevel, IPAddress, ThreatScore, FailedAttempts, SuccessfulAttempts, TargetedUsers, Countries\n| order by ThreatScore desc\n| take 10",
+              "size": 0,
+              "title": "🌐 Top 10 Threat Source IPs",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ThreatScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  }
+                ]
+              }
+            },
+            "customWidth": "50",
+            "name": "query - top ips",
+            "id": "2eeda8b0-8bc7-4098-ba89-78bb883753d8"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Security Posture Metrics\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| summarize \n    TotalSuccessful = count(),\n    MFAUsed = countif(AuthenticationRequirement == \"multiFactorAuthentication\"),\n    SingleFactor = countif(AuthenticationRequirement == \"singleFactorAuthentication\"),\n    LegacyAuth = countif(ClientAppUsed !in (\"Browser\", \"Mobile Apps and Desktop clients\")),\n    Passwordless = countif(AuthenticationDetails has_any (\"FIDO2\", \"WindowsHelloForBusiness\", \"Passkey\"))\n| extend \n    MFARate = iff(TotalSuccessful > 0, round(toreal(MFAUsed) / toreal(TotalSuccessful) * 100, 1), 0.0),\n    LegacyRate = iff(TotalSuccessful > 0, round(toreal(LegacyAuth) / toreal(TotalSuccessful) * 100, 1), 0.0),\n    PasswordlessRate = iff(TotalSuccessful > 0, round(toreal(Passwordless) / toreal(TotalSuccessful) * 100, 1), 0.0)\n| extend \n    MFAStatus = case(MFARate >= 95, \"🟢\", MFARate >= 80, \"🟡\", MFARate >= 50, \"🟠\", \"🔴\"),\n    LegacyStatus = case(LegacyRate <= 1, \"🟢\", LegacyRate <= 5, \"🟡\", \"🔴\")\n| project \n    Metric = pack_array(\"🔐 MFA Adoption\", \"📟 Legacy Auth\", \"🔑 Passwordless\", \"👥 Total Users\"),\n    Value = pack_array(MFARate, LegacyRate, PasswordlessRate, TotalSuccessful),\n    Status = pack_array(strcat(MFAStatus, \" \", tostring(MFARate), \"%\"), strcat(LegacyStatus, \" \", tostring(LegacyRate), \"%\"), strcat(tostring(PasswordlessRate), \"%\"), tostring(TotalSuccessful))\n| mv-expand Metric to typeof(string), Value to typeof(real), Status to typeof(string)",
+              "size": 4,
+              "title": "📊 Security Posture",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Status",
+                  "formatter": 1
+                },
+                "secondaryContent": {
+                  "columnMatch": "Value",
+                  "formatter": 4,
+                  "formatOptions": {
+                    "palette": "greenRed"
+                  }
+                }
+              }
+            },
+            "name": "query - security posture",
+            "id": "9430b286-7646-49b5-a492-7db05e5de413"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// 24-Hour Trend\nSigninLogs\n| where TimeGenerated > ago(24h)\n| summarize \n    Success = countif(ResultType == \"0\"),\n    Failed = countif(ResultType != \"0\"),\n    HighRisk = countif(RiskLevelDuringSignIn == \"high\")\n    by bin(TimeGenerated, 1h)\n| render timechart",
+              "size": 0,
+              "title": "📈 Last 24 Hours Activity Trend",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "timechart"
+            },
+            "name": "query - 24h trend",
+            "id": "c23d9a9c-0e9b-4a15-810c-8ad4ab780fd5"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## ⚔️ Attack Chain Timeline (MITRE ATT&CK)\n\nThis visualization maps sign-in events to attack phases based on the **MITRE ATT&CK** framework. Click on an attack phase below to view detailed events.\n\n| Phase | Description | Indicators |\n|-------|-------------|------------|\n| 🔍 **Reconnaissance** | Attacker probes for valid accounts | User enumeration, invalid usernames |\n| 🔑 **Initial Access** | Credential attacks to gain entry | Brute force, password spray, phishing |\n| 🎭 **Credential Access** | MFA bypass attempts | MFA fatigue, token theft, AiTM |\n| ✅ **Successful Compromise** | Attacker gains valid access | Risky successful logins |\n| 🔄 **Persistence** | Maintaining access | Token refresh, session manipulation |\n| 📍 **Lateral Movement** | Moving within environment | New locations, impossible travel |"
+            },
+            "name": "text - attack chain header",
+            "id": "7dd15d64-0b39-4f2f-bf80-3fc9a15df6ad"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "attack-phase-selector",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AttackPhase",
+                  "type": 2,
+                  "isRequired": false,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\": \"All\", \"label\": \"📊 All Phases\"}, {\"value\": \"Reconnaissance\", \"label\": \"🔍 Reconnaissance\"}, {\"value\": \"InitialAccess\", \"label\": \"🔑 Initial Access\"}, {\"value\": \"CredentialAccess\", \"label\": \"🎭 Credential Access (MFA Bypass)\"}, {\"value\": \"Compromise\", \"label\": \"✅ Successful Compromise\"}, {\"value\": \"Persistence\", \"label\": \"🔄 Persistence\"}, {\"value\": \"LateralMovement\", \"label\": \"📍 Lateral Movement\"}]",
+                  "value": "Reconnaissance",
+                  "label": "🎯 Select Attack Phase"
+                }
+              ],
+              "style": "pills"
+            },
+            "name": "parameters - attack phase",
+            "id": "cb7799d7-a909-41be-9df3-c8430e623978"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Attack Chain Timeline - Visual Summary\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend AttackPhase = case(\n    // Reconnaissance - User enumeration\n    ResultType == \"50034\", \"🔍 Reconnaissance\",\n    ResultType == \"50059\", \"🔍 Reconnaissance\",\n    // Initial Access - Credential Attacks\n    ResultType == \"50126\", \"🔑 Initial Access\",\n    ResultType == \"50053\", \"🔑 Initial Access\",\n    ResultType == \"50057\", \"🔑 Initial Access\",\n    ResultType == \"50055\", \"🔑 Initial Access\",\n    // Credential Access - MFA Bypass\n    ResultType in (\"50074\", \"50076\", \"500121\", \"50079\", \"50158\"), \"🎭 Credential Access\",\n    RiskEventTypes_V2 has_any (\"tokenIssuerAnomaly\", \"anomalousToken\", \"suspiciousInboxForwarding\"), \"🎭 Credential Access\",\n    // Successful Compromise - High Risk Success\n    ResultType == \"0\" and RiskLevelDuringSignIn in (\"high\", \"medium\"), \"✅ Compromise\",\n    ResultType == \"0\" and RiskEventTypes_V2 has_any (\"leakedCredentials\", \"maliciousIPAddress\"), \"✅ Compromise\",\n    // Persistence - Token/Session abuse\n    RiskEventTypes_V2 has_any (\"unfamiliarFeatures\", \"unlikelyTravel\"), \"🔄 Persistence\",\n    // Lateral Movement - Location anomalies\n    RiskEventTypes_V2 has_any (\"impossibleTravel\", \"mcasImpossibleTravel\", \"newCountry\"), \"📍 Lateral Movement\",\n    ResultType == \"0\", \"✅ Normal\",\n    \"⚪ Other\"\n)\n| extend PhaseOrder = case(\n    AttackPhase has \"Reconnaissance\", 1,\n    AttackPhase has \"Initial Access\", 2,\n    AttackPhase has \"Credential Access\", 3,\n    AttackPhase has \"Compromise\", 4,\n    AttackPhase has \"Persistence\", 5,\n    AttackPhase has \"Lateral Movement\", 6,\n    10\n)\n| where AttackPhase != \"✅ Normal\" and AttackPhase != \"⚪ Other\"\n| summarize EventCount = count(), UniqueUsers = dcount(UserPrincipalName), UniqueIPs = dcount(IPAddress) by AttackPhase, PhaseOrder\n| order by PhaseOrder asc\n| project AttackPhase, EventCount, UniqueUsers, UniqueIPs",
+              "size": 3,
+              "title": "⚔️ Attack Chain Summary - Click Phase for Details",
+              "timeContextFromParameter": "TimeRange",
+              "exportFieldName": "AttackPhase",
+              "exportParameterName": "SelectedAttackPhase",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "AttackPhase",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "EventCount",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "redGreen"
+                  },
+                  "numberFormat": {
+                    "unit": 17,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "secondaryContent": {
+                  "columnMatch": "UniqueUsers",
+                  "formatter": 1,
+                  "formatOptions": {
+                    "compositeBarSettings": {
+                      "labelText": "users",
+                      "columnSettings": []
+                    }
+                  }
+                }
+              }
+            },
+            "name": "query - attack chain tiles",
+            "id": "ebe25f31-d71d-4f46-8362-77c95c79f266"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Attack Chain Timeline - Hourly Visualization\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend AttackPhase = case(\n    ResultType == \"50034\" or ResultType == \"50059\", \"Reconnaissance\",\n    ResultType in (\"50126\", \"50053\", \"50057\", \"50055\"), \"Initial Access\",\n    ResultType in (\"50074\", \"50076\", \"500121\", \"50079\", \"50158\"), \"Credential Access\",\n    ResultType == \"0\" and RiskLevelDuringSignIn in (\"high\", \"medium\"), \"Compromise\",\n    RiskEventTypes_V2 has_any (\"impossibleTravel\", \"mcasImpossibleTravel\"), \"Lateral Movement\",\n    \"\"\n)\n| where isnotempty(AttackPhase)\n| summarize Count = count() by AttackPhase, bin(TimeGenerated, 1h)\n| render timechart",
+              "size": 0,
+              "title": "📈 Attack Phase Timeline (Hourly)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "timechart"
+            },
+            "name": "query - attack chain timeline",
+            "id": "ef34fadc-d5af-4ec6-95fb-82363f7c1571"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Attack Phase Details - Shows events for selected phase\nlet selectedPhase = \"{SelectedAttackPhase}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend AttackPhase = case(\n    ResultType == \"50034\" or ResultType == \"50059\", \"🔍 Reconnaissance\",\n    ResultType in (\"50126\", \"50053\", \"50057\", \"50055\"), \"🔑 Initial Access\",\n    ResultType in (\"50074\", \"50076\", \"500121\", \"50079\", \"50158\"), \"🎭 Credential Access\",\n    ResultType == \"0\" and RiskLevelDuringSignIn in (\"high\", \"medium\"), \"✅ Compromise\",\n    RiskEventTypes_V2 has_any (\"impossibleTravel\", \"mcasImpossibleTravel\", \"newCountry\"), \"📍 Lateral Movement\",\n    RiskEventTypes_V2 has_any (\"unfamiliarFeatures\", \"unlikelyTravel\"), \"🔄 Persistence\",\n    \"\"\n)\n| extend MITRETechnique = case(\n    AttackPhase has \"Reconnaissance\", \"T1589 - Gather Victim Identity Information\",\n    AttackPhase has \"Initial Access\" and ResultType == \"50126\", \"T1110.001 - Password Guessing\",\n    AttackPhase has \"Initial Access\" and ResultType == \"50053\", \"T1110 - Brute Force (Account Lockout)\",\n    AttackPhase has \"Credential Access\", \"T1111 - Multi-Factor Authentication Interception\",\n    AttackPhase has \"Compromise\", \"T1078.004 - Valid Accounts: Cloud Accounts\",\n    AttackPhase has \"Lateral Movement\", \"T1550 - Use Alternate Authentication Material\",\n    AttackPhase has \"Persistence\", \"T1098 - Account Manipulation\",\n    \"Unknown\"\n)\n| extend FailureReason = case(\n    ResultType == \"50034\", \"User not found (enumeration)\",\n    ResultType == \"50126\", \"Invalid credentials\",\n    ResultType == \"50053\", \"Account locked out\",\n    ResultType == \"50057\", \"Account disabled\",\n    ResultType == \"50055\", \"Password expired\",\n    ResultType == \"50074\", \"MFA required but not completed\",\n    ResultType == \"50076\", \"MFA challenge not completed\",\n    ResultType == \"500121\", \"MFA authentication failed\",\n    ResultType == \"0\", \"Successful sign-in\",\n    strcat(\"Error: \", ResultType)\n)\n| where isnotempty(AttackPhase)\n| where selectedPhase == \"All\" or AttackPhase has selectedPhase or isempty(selectedPhase)\n| project \n    TimeGenerated,\n    AttackPhase,\n    MITRETechnique,\n    UserPrincipalName,\n    IPAddress,\n    Country = tostring(LocationDetails.countryOrRegion),\n    City = tostring(LocationDetails.city),\n    FailureReason,\n    RiskLevel = coalesce(RiskLevelDuringSignIn, \"none\"),\n    RiskEvents = RiskEventTypes_V2,\n    AppDisplayName,\n    ClientAppUsed,\n    DeviceDetail\n| order by TimeGenerated desc\n| take 100",
+              "size": 0,
+              "title": "📋 Attack Phase Events - {SelectedAttackPhase}",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "AttackPhase",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Reconnaissance",
+                          "representation": "blue",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Initial Access",
+                          "representation": "orange",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Credential Access",
+                          "representation": "redBright",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Compromise",
+                          "representation": "red",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Lateral Movement",
+                          "representation": "purple",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Persistence",
+                          "representation": "yellow",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "gray",
+                          "text": "{0}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "RiskLevel",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "high",
+                          "representation": "red",
+                          "text": "🔴 HIGH"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "medium",
+                          "representation": "orange",
+                          "text": "🟠 MEDIUM"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "low",
+                          "representation": "yellow",
+                          "text": "🟡 LOW"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "green",
+                          "text": "🟢 NONE"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedAttackPhase",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "query - attack phase details",
+            "id": "56172465-2d7c-417a-b40f-b1498fb7a4d2"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Executive"
+      },
+      "name": "group - executive",
+      "id": "42204a9a-1830-477a-874e-1b5023fdc1d0"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Security Metrics Overview - Materialized for Performance\nlet BaseData = materialize(\n    SigninLogs\n    | where TimeGenerated {TimeRange}\n);\nBaseData\n| summarize \n    TotalSignIns = count(),\n    SuccessfulSignIns = countif(ResultType == \"0\"),\n    FailedSignIns = countif(ResultType != \"0\"),\n    UniqueUsers = dcount(UserPrincipalName),\n    UniqueIPs = dcount(IPAddress),\n    UniqueLocations = dcount(strcat(tostring(LocationDetails.countryOrRegion), \"-\", tostring(LocationDetails.city))),\n    HighRiskSignIns = countif(RiskLevelDuringSignIn == \"high\"),\n    MFASignIns = countif(AuthenticationRequirement == \"multiFactorAuthentication\")\n| extend \n    FailureRate = round(toreal(FailedSignIns) / TotalSignIns * 100, 2),\n    MFARate = round(toreal(MFASignIns) / SuccessfulSignIns * 100, 2)\n| project \n    Metric = pack_array(\"Total Sign-Ins\", \"Successful\", \"Failed\", \"Failure Rate %\", \"Unique Users\", \"Unique IPs\", \"High Risk\", \"MFA Rate %\"),\n    Value = pack_array(TotalSignIns, SuccessfulSignIns, FailedSignIns, FailureRate, UniqueUsers, UniqueIPs, HighRiskSignIns, MFARate)\n| mv-expand Metric to typeof(string), Value to typeof(string)",
+              "size": 4,
+              "title": "📈 Security Metrics Summary",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "numberFormat": {
+                    "unit": 17,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                }
+              }
+            },
+            "name": "query - metrics summary",
+            "id": "09e08188-4138-4857-9cd1-2cbd4f48a0e1"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Sign-in Trend with Risk Overlay\nSigninLogs\n| where TimeGenerated {TimeRange}\n| summarize \n    Success = countif(ResultType == \"0\"),\n    Failed = countif(ResultType != \"0\"),\n    HighRisk = countif(RiskLevelDuringSignIn == \"high\") * 10,\n    MediumRisk = countif(RiskLevelDuringSignIn == \"medium\") * 5\n    by bin(TimeGenerated, 1h)\n| render timechart",
+              "size": 0,
+              "title": "📊 Sign-in Activity Trend (Risk Overlay)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "timechart"
+            },
+            "name": "query - signin trend",
+            "id": "09a3b106-a5bb-4fe5-9b0b-1273fc154899"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Top Failure Reasons with MITRE Mapping\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| extend FailureReason = case(\n    ResultType == \"50126\", \"Invalid credentials\",\n    ResultType == \"50053\", \"Account locked\",\n    ResultType == \"50057\", \"Account disabled\",\n    ResultType == \"50055\", \"Password expired\",\n    ResultType == \"50074\", \"MFA required\",\n    ResultType == \"50076\", \"MFA not completed\",\n    ResultType == \"53003\", \"Conditional Access blocked\",\n    ResultType == \"50079\", \"MFA registration required\",\n    ResultType == \"50158\", \"External security challenge\",\n    ResultType == \"50140\", \"Session expired\",\n    ResultType == \"70008\", \"Session expired\",\n    ResultType == \"530032\", \"Security policy blocked\",\n    ResultType == \"500121\", \"MFA failed\",\n    ResultType == \"50034\", \"User not found\",\n    strcat(\"Other (\", ResultType, \")\")\n)\n| extend MITRETactic = case(\n    ResultType == \"50126\", \"T1110 - Brute Force\",\n    ResultType == \"50053\", \"T1110 - Brute Force (Lockout)\",\n    ResultType in (\"50074\", \"50076\", \"500121\"), \"T1111 - MFA Interception\",\n    ResultType == \"53003\", \"T1078 - Valid Accounts (Blocked)\",\n    \"T1078 - Valid Accounts\"\n)\n| summarize Count = count() by FailureReason, MITRETactic\n| order by Count desc\n| take 15",
+              "size": 0,
+              "title": "🔴 Top Failure Reasons (MITRE Mapped)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - failure reasons",
+            "id": "c3b34608-788f-4f14-b7e7-3071445eef21"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Sign-ins by Country\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| where isnotempty(Country)\n| summarize \n    TotalSignIns = count(),\n    FailedSignIns = countif(ResultType != \"0\"),\n    UniqueUsers = dcount(UserPrincipalName),\n    RiskySignIns = countif(RiskLevelDuringSignIn in (\"high\", \"medium\"))\n    by Country\n| extend FailureRate = round(toreal(FailedSignIns) / TotalSignIns * 100, 2)\n| extend RiskLevel = case(\n    FailureRate > 80, \"🔴 Critical\",\n    FailureRate > 50, \"🟠 High\",\n    RiskySignIns > 0, \"🟡 Medium\",\n    \"🟢 Low\"\n)\n| order by TotalSignIns desc\n| take 15",
+              "size": 0,
+              "title": "🌍 Sign-ins by Country",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - by country",
+            "id": "e1b1910b-f811-4396-9d2d-db54424f2ef0"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Overview"
+      },
+      "name": "group - overview",
+      "id": "bdc3ccda-b64a-4f74-84d8-5b3db8676a18"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔴 Brute Force Attack Detection\n\n**MITRE ATT&CK:** T1110 - Brute Force\n\nIdentify accounts experiencing high volumes of failed login attempts, indicating credential attacks."
+            },
+            "name": "text - bruteforce header",
+            "id": "99bb90ce-f43a-41e0-a7bd-ef2280c771ea"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Brute Force - Users Under Attack\nlet threshold = toint({FailureThreshold});\nlet ExcludedIPList = split(\"{ExcludedIPs}\", \",\");\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| where not(IPAddress in (ExcludedIPList))\n| summarize \n    FailedAttempts = count(),\n    UniqueIPs = dcount(IPAddress),\n    IPList = make_set(IPAddress, 10),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    Apps = make_set(AppDisplayName, 5),\n    ErrorCodes = make_set(ResultType, 5),\n    FirstAttempt = min(TimeGenerated),\n    LastAttempt = max(TimeGenerated)\n    by UserPrincipalName\n| where FailedAttempts >= threshold\n| extend AttackDuration = datetime_diff('minute', LastAttempt, FirstAttempt)\n| extend AttackVelocity = round(toreal(FailedAttempts) / iif(AttackDuration == 0, 1, AttackDuration), 2)\n| extend ThreatLevel = case(\n    FailedAttempts > 500, \"🔴 Critical - Automated Attack\",\n    FailedAttempts > 100, \"🔴 Critical\",\n    FailedAttempts > 50, \"🟠 High\",\n    FailedAttempts > 20, \"🟡 Medium\",\n    \"🟢 Low\"\n)\n| extend MITRETechnique = \"T1110.001 - Password Guessing\"\n| order by FailedAttempts desc\n| project ThreatLevel, UserPrincipalName, FailedAttempts, UniqueIPs, AttackDuration, AttackVelocity, IPList, Countries, Apps, MITRETechnique, FirstAttempt, LastAttempt",
+              "size": 0,
+              "title": "🎯 Users Under Brute Force Attack",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "FailedAttempts",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  },
+                  {
+                    "columnMatch": "AttackVelocity",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "orange"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - bruteforce users",
+            "id": "197286ae-25e4-4ad1-ad25-dc200a41924d"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Account Compromise Indicator - Success After Multiple Failures\nlet successWindow = 30m;\nlet failThreshold = 5;\nlet FailedLogins = SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize \n    FailureCount = count(),\n    LastFailure = max(TimeGenerated),\n    FailedIPs = make_set(IPAddress, 5)\n    by UserPrincipalName, IPAddress\n| where FailureCount >= failThreshold;\nlet SuccessfulLogins = SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| project UserPrincipalName, IPAddress, SuccessTime = TimeGenerated, \n    AppDisplayName, Country = tostring(LocationDetails.countryOrRegion), DeviceDetail;\nFailedLogins\n| join kind=inner SuccessfulLogins on UserPrincipalName, IPAddress\n| where SuccessTime > LastFailure\n| where SuccessTime - LastFailure <= successWindow\n| extend TimeSinceLastFailure = datetime_diff('minute', SuccessTime, LastFailure)\n| extend CompromiseRisk = case(\n    TimeSinceLastFailure <= 2, \"🔴 CRITICAL - Immediate Success (Likely Compromised)\",\n    TimeSinceLastFailure <= 5, \"🔴 Very High - Rapid Success\",\n    TimeSinceLastFailure <= 15, \"🟠 High - Quick Success\",\n    \"🟡 Medium - Delayed Success\"\n)\n| extend MITRETechnique = \"T1078.004 - Cloud Accounts\"\n| project CompromiseRisk, UserPrincipalName, IPAddress, FailureCount, TimeSinceLastFailure, SuccessTime, AppDisplayName, Country, MITRETechnique\n| order by TimeSinceLastFailure asc",
+              "size": 0,
+              "title": "⚠️ CRITICAL: Successful Login After Failed Attempts (Potential Compromise)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - compromise indicator",
+            "id": "79063cb7-f95b-4f92-a76b-81b818dd19f7"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Top Attacking Source IPs\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize \n    FailedAttempts = count(),\n    TargetedUsers = dcount(UserPrincipalName),\n    UserList = make_set(UserPrincipalName, 15),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    SuccessAfterFail = countif(ResultType == \"0\")\n    by IPAddress\n| where FailedAttempts >= toint({FailureThreshold})\n| extend ThreatScore = FailedAttempts + (TargetedUsers * 10) + (SuccessAfterFail * 100)\n| extend AttackType = case(\n    TargetedUsers > 10, \"Password Spray\",\n    FailedAttempts > 100, \"Brute Force\",\n    \"Targeted Attack\"\n)\n| extend ThreatLevel = case(\n    SuccessAfterFail > 0, \"🔴 CRITICAL - Successful Breach\",\n    ThreatScore > 500, \"🔴 Critical\",\n    ThreatScore > 200, \"🟠 High\",\n    \"🟡 Medium\"\n)\n| order by ThreatScore desc\n| take 25",
+              "size": 0,
+              "title": "🌐 Top Attacking Source IPs",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ThreatScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  }
+                ]
+              }
+            },
+            "customWidth": "50",
+            "name": "query - attacking ips",
+            "id": "19b84e71-71c7-4a9c-936b-873a1a085d07"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Brute Force Attack Timeline\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize \n    FailedAttempts = count(),\n    UniqueTargets = dcount(UserPrincipalName),\n    UniqueIPs = dcount(IPAddress)\n    by bin(TimeGenerated, 15m)\n| render timechart",
+              "size": 0,
+              "title": "📈 Failed Login Attempts Timeline",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "query - bruteforce timeline",
+            "id": "0b58dec7-e9c0-48a9-ac68-43c0c9fb06bf"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "BruteForce"
+      },
+      "name": "group - bruteforce",
+      "id": "8cf11296-46b5-4c0d-a7c6-4f8777284702"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🟠 Password Spray Detection\n\n**MITRE ATT&CK:** T1110.003 - Password Spraying\n\nDetect distributed password guessing attacks where attackers try common passwords across many accounts to avoid lockouts."
+            },
+            "name": "text - spray header",
+            "id": "b41e4cda-6301-4986-97d6-18b8949b105d"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Password Spray Detection - IPs Targeting Multiple Users\nlet userThreshold = 10;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize \n    TargetedUsers = dcount(UserPrincipalName),\n    FailedAttempts = count(),\n    UserList = make_set(UserPrincipalName, 25),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    Apps = make_set(AppDisplayName, 5),\n    ErrorCodes = make_set(ResultType, 5)\n    by IPAddress, bin(TimeGenerated, 1h)\n| where TargetedUsers >= userThreshold\n| extend SprayScore = TargetedUsers * 10 + FailedAttempts\n| extend SprayVelocity = round(toreal(TargetedUsers) / 60, 2)\n| extend ThreatLevel = case(\n    TargetedUsers > 100, \"🔴 Critical - Mass Spray Campaign\",\n    TargetedUsers > 50, \"🔴 Critical - Large Scale Spray\",\n    TargetedUsers > 25, \"🟠 High - Distributed Spray\",\n    \"🟡 Medium - Targeted Spray\"\n)\n| extend MITRETechnique = \"T1110.003 - Password Spraying\"\n| project ThreatLevel, IPAddress, TimeGenerated, TargetedUsers, FailedAttempts, SprayScore, SprayVelocity, Countries, Apps, MITRETechnique, UserList\n| order by SprayScore desc",
+              "size": 0,
+              "title": "🎯 Password Spray Sources (IPs Targeting Multiple Users)",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ThreatLevel",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "SprayScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  },
+                  {
+                    "columnMatch": "TargetedUsers",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "orange"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - spray sources",
+            "id": "76b854ad-54f3-4ceb-83a0-9f5d1f591bb7"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Password Spray Success Detection - CRITICAL\nlet userThreshold = 10;\nlet SprayIPs = SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize TargetedUsers = dcount(UserPrincipalName) by IPAddress, bin(TimeGenerated, 1h)\n| where TargetedUsers >= userThreshold\n| distinct IPAddress;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where IPAddress in (SprayIPs)\n| where ResultType == \"0\"\n| summarize \n    SuccessfulLogins = count(),\n    CompromisedUsers = make_set(UserPrincipalName, 20),\n    CompromisedCount = dcount(UserPrincipalName),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    Apps = make_set(AppDisplayName, 5),\n    FirstSuccess = min(TimeGenerated),\n    LastSuccess = max(TimeGenerated)\n    by IPAddress\n| where SuccessfulLogins > 0\n| extend ThreatLevel = \"🔴 CRITICAL - PASSWORD SPRAY SUCCESS\"\n| extend MITRETechnique = \"T1078.004 - Cloud Accounts (Compromised)\"\n| project ThreatLevel, IPAddress, CompromisedCount, SuccessfulLogins, CompromisedUsers, Countries, Apps, FirstSuccess, LastSuccess, MITRETechnique\n| order by CompromisedCount desc",
+              "size": 0,
+              "title": "🚨 CRITICAL: Successful Logins from Password Spray IPs",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - spray success",
+            "id": "32baf165-4bc8-48bc-a2fe-719858ee8eb3"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Users Targeted by Password Spray\nlet userThreshold = 10;\nlet SprayIPs = SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize TargetedUsers = dcount(UserPrincipalName) by IPAddress, bin(TimeGenerated, 24h)\n| where TargetedUsers >= userThreshold\n| distinct IPAddress;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where IPAddress in (SprayIPs)\n| summarize \n    FailedFromSprayIPs = countif(ResultType != \"0\"),\n    SuccessFromSprayIPs = countif(ResultType == \"0\"),\n    SprayIPsHit = dcount(IPAddress),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by UserPrincipalName\n| extend CompromiseIndicator = iif(SuccessFromSprayIPs > 0, \"🔴 COMPROMISED\", \"\")\n| extend RiskScore = FailedFromSprayIPs + (SuccessFromSprayIPs * 100)\n| order by RiskScore desc\n| take 50",
+              "size": 0,
+              "title": "👤 Users Targeted by Password Spray",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - spray victims",
+            "id": "383080e3-6746-48a5-af5d-cff4931374ea"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "PasswordSpray"
+      },
+      "name": "group - passwordspray",
+      "id": "b9f95ebd-c763-43de-bf89-3bd71e5da1e9"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## ⚡ MFA Bypass Detection\n\n**MITRE ATT&CK:** T1111 - Multi-Factor Authentication Interception, T1557 - Adversary-in-the-Middle\n\nDetect attacks designed to bypass MFA including MFA Fatigue/Bombing, AiTM Phishing, and Token Theft."
+            },
+            "name": "text - mfabypass header",
+            "id": "3b6a746f-f357-4f06-93bb-b8c3d5d90fe3"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// MFA Fatigue Attack Detection - Rapid MFA Prompts\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType in (\"50074\", \"50076\", \"500121\", \"50097\")\n| summarize \n    MFAPrompts = count(),\n    TimeSpanMinutes = datetime_diff('minute', max(TimeGenerated), min(TimeGenerated)),\n    UniqueIPs = dcount(IPAddress),\n    IPList = make_set(IPAddress, 5),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    Apps = make_set(AppDisplayName, 3),\n    FirstPrompt = min(TimeGenerated),\n    LastPrompt = max(TimeGenerated)\n    by UserPrincipalName, bin(TimeGenerated, 10m)\n| where MFAPrompts >= 5\n| extend PromptsPerMinute = round(toreal(MFAPrompts) / iif(TimeSpanMinutes == 0, 1, TimeSpanMinutes), 2)\n| extend ThreatLevel = case(\n    MFAPrompts > 20, \"🔴 CRITICAL - Active MFA Bombing\",\n    MFAPrompts > 10, \"🔴 High - Likely MFA Fatigue Attack\",\n    PromptsPerMinute > 1, \"🟠 Medium - Suspicious MFA Activity\",\n    \"🟡 Low - Elevated MFA Failures\"\n)\n| extend MITRETechnique = \"T1621 - MFA Request Generation\"\n| project ThreatLevel, UserPrincipalName, MFAPrompts, TimeSpanMinutes, PromptsPerMinute, UniqueIPs, Countries, Apps, MITRETechnique, FirstPrompt, LastPrompt\n| order by MFAPrompts desc",
+              "size": 0,
+              "title": "🔴 MFA Fatigue/Bombing Attack Detection",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "MFAPrompts",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - mfa fatigue",
+            "id": "f986c9ad-e092-42eb-b9b7-8c50436afeea"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// MFA Fatigue Success - User Approved After Bombardment\nlet MFAFatigueUsers = SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType in (\"50074\", \"50076\", \"500121\")\n| summarize MFAPrompts = count() by UserPrincipalName, bin(TimeGenerated, 1h)\n| where MFAPrompts >= 5\n| project UserPrincipalName, FatigueWindow = TimeGenerated, MFAPrompts;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| where AuthenticationRequirement == \"multiFactorAuthentication\"\n| join kind=inner MFAFatigueUsers on UserPrincipalName\n| where TimeGenerated between (FatigueWindow .. (FatigueWindow + 2h))\n| summarize \n    SuccessAfterFatigue = count(),\n    MFAPromptsBeforeSuccess = max(MFAPrompts),\n    SuccessTime = min(TimeGenerated),\n    IPAddress = take_any(IPAddress),\n    Country = take_any(tostring(LocationDetails.countryOrRegion)),\n    App = take_any(AppDisplayName)\n    by UserPrincipalName\n| extend ThreatLevel = \"🔴 CRITICAL - MFA FATIGUE SUCCESS (LIKELY COMPROMISED)\"\n| extend MITRETechnique = \"T1621 - MFA Request Generation (Success)\"\n| project ThreatLevel, UserPrincipalName, MFAPromptsBeforeSuccess, SuccessTime, IPAddress, Country, App, MITRETechnique\n| order by MFAPromptsBeforeSuccess desc",
+              "size": 0,
+              "title": "🚨 CRITICAL: Successful Login After MFA Fatigue Attack",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - mfa fatigue success",
+            "id": "84dfa1ab-d6d7-4a46-8ef7-a428e49119e2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// AiTM Phishing Detection - Session Token Used from Different IP\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| where isnotempty(OriginalRequestId)\n| summarize \n    IPAddresses = make_set(IPAddress, 10),\n    IPCount = dcount(IPAddress),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    CountryCount = dcount(tostring(LocationDetails.countryOrRegion)),\n    UserAgents = make_set(tostring(DeviceDetail.browser), 5),\n    Apps = make_set(AppDisplayName, 5),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by UserPrincipalName, OriginalRequestId\n| where IPCount > 1\n| extend SessionDuration = datetime_diff('minute', LastSeen, FirstSeen)\n| where SessionDuration < 60\n| extend ThreatLevel = case(\n    CountryCount > 1, \"🔴 CRITICAL - AiTM Phishing (Multi-Country Session)\",\n    IPCount > 2, \"🔴 CRITICAL - Token Replay Attack\",\n    \"🟠 HIGH - Suspicious Session Sharing\"\n)\n| extend MITRETechnique = \"T1557 - Adversary-in-the-Middle\"\n| project ThreatLevel, UserPrincipalName, IPCount, CountryCount, IPAddresses, Countries, SessionDuration, Apps, MITRETechnique, FirstSeen, LastSeen\n| order by IPCount desc",
+              "size": 0,
+              "title": "🎣 AiTM Phishing / Token Replay Detection",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - aitm detection",
+            "id": "1b1b0f17-a33a-4367-b8ba-c5515a038c36"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Token Theft Indicators - Anomalous Token Usage\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| where TokenIssuerType == \"AzureAD\"\n| summarize \n    SignInCount = count(),\n    UniqueIPs = dcount(IPAddress),\n    UniqueCountries = dcount(tostring(LocationDetails.countryOrRegion)),\n    IPList = make_set(IPAddress, 10),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    Apps = make_set(AppDisplayName, 5),\n    UniqueDevices = dcount(tostring(DeviceDetail.deviceId))\n    by UserPrincipalName, bin(TimeGenerated, 1h)\n| where UniqueIPs > 3 or UniqueCountries > 2\n| extend ThreatLevel = case(\n    UniqueCountries > 2, \"🔴 CRITICAL - Possible Token Theft (Multi-Country)\",\n    UniqueIPs > 5, \"🟠 HIGH - Suspicious Token Usage\",\n    \"🟡 MEDIUM - Unusual Token Pattern\"\n)\n| extend MITRETechnique = \"T1528 - Steal Application Access Token\"\n| project ThreatLevel, UserPrincipalName, SignInCount, UniqueIPs, UniqueCountries, UniqueDevices, IPList, Countries, Apps, MITRETechnique\n| order by UniqueCountries desc, UniqueIPs desc",
+              "size": 0,
+              "title": "🔑 Token Theft Indicators",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - token theft",
+            "id": "c584ffa4-e966-4862-8cdc-0a76c95e0cd2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Suspicious OAuth Consent / Consent Phishing\n// Note: Requires AuditLogs correlation\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| where AppDisplayName !in (\"Microsoft Office\", \"Microsoft Teams\", \"Outlook Mobile\", \"Microsoft Edge\", \"Windows Sign In\", \"Microsoft Azure Active Directory Connect\", \"Microsoft Intune Company Portal\", \"OneDrive\")\n| where ResourceDisplayName has_any (\"Graph\", \"Office 365\", \"SharePoint\", \"Exchange\", \"Azure\")\n| summarize \n    ConsentCount = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    Users = make_set(UserPrincipalName, 10),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    FirstSeen = min(TimeGenerated)\n    by AppDisplayName, AppId\n| where ConsentCount > 5 or UniqueUsers > 3\n| extend ThreatLevel = case(\n    UniqueUsers > 10, \"🔴 HIGH - Potential Consent Phishing\",\n    UniqueUsers > 5, \"🟠 MEDIUM - Unusual App Adoption\",\n    \"🟡 LOW - Monitor\"\n)\n| extend MITRETechnique = \"T1566.002 - Spearphishing Link (OAuth)\"\n| project ThreatLevel, AppDisplayName, AppId, ConsentCount, UniqueUsers, Users, Countries, MITRETechnique, FirstSeen\n| order by UniqueUsers desc",
+              "size": 0,
+              "title": "📱 Suspicious OAuth Application Usage",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - oauth consent",
+            "id": "470aca93-77ae-4901-9817-26019a409704"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "MFABypass"
+      },
+      "name": "group - mfabypass",
+      "id": "6d1f5a45-58e3-4423-8919-a89de52767d7"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 👑 Privileged Account Monitoring\n\n**MITRE ATT&CK:** T1078.004 - Cloud Accounts, T1098 - Account Manipulation\n\nMonitor administrator and privileged account sign-ins for anomalies and potential compromise."
+            },
+            "name": "text - privileged header",
+            "id": "cb03a376-1497-4275-a5d5-5320c3b2a41c"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Privileged Account Sign-ins Overview\nlet PrivilegedRoles = dynamic([\"Global Administrator\", \"Security Administrator\", \"Privileged Role Administrator\", \"User Administrator\", \"Exchange Administrator\", \"SharePoint Administrator\", \"Intune Administrator\", \"Cloud Application Administrator\", \"Application Administrator\", \"Conditional Access Administrator\"]);\nlet PrivilegedUsers = IdentityInfo\n| where TimeGenerated > ago(1d)\n| where AssignedRoles has_any (PrivilegedRoles)\n| distinct AccountUPN;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName in (PrivilegedUsers)\n| summarize \n    TotalSignIns = count(),\n    SuccessfulSignIns = countif(ResultType == \"0\"),\n    FailedSignIns = countif(ResultType != \"0\"),\n    RiskySignIns = countif(RiskLevelDuringSignIn in (\"high\", \"medium\")),\n    NoMFASignIns = countif(ResultType == \"0\" and AuthenticationRequirement == \"singleFactorAuthentication\"),\n    UniqueIPs = dcount(IPAddress),\n    UniqueCountries = dcount(tostring(LocationDetails.countryOrRegion)),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    LastSignIn = max(TimeGenerated)\n    by UserPrincipalName\n| extend RiskIndicator = case(\n    RiskySignIns > 0, \"🔴 CRITICAL - Risky Admin Sign-in\",\n    NoMFASignIns > 0, \"🟠 HIGH - Admin Without MFA\",\n    UniqueCountries > 2, \"🟡 MEDIUM - Multi-Country Admin\",\n    FailedSignIns > 10, \"🟡 MEDIUM - Failed Admin Logins\",\n    \"🟢 Normal\"\n)\n| project RiskIndicator, UserPrincipalName, TotalSignIns, FailedSignIns, RiskySignIns, NoMFASignIns, UniqueCountries, Countries, LastSignIn\n| order by RiskySignIns desc, NoMFASignIns desc",
+              "size": 0,
+              "title": "👑 Privileged Account Activity",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "RiskIndicator",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "RiskySignIns",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  },
+                  {
+                    "columnMatch": "NoMFASignIns",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "orange"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - privileged overview",
+            "id": "4465f13b-ed27-4286-8025-a1a109451948"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Privileged Account Anomalies\nlet PrivilegedRoles = dynamic([\"Global Administrator\", \"Security Administrator\", \"Privileged Role Administrator\", \"User Administrator\"]);\nlet PrivilegedUsers = IdentityInfo\n| where TimeGenerated > ago(1d)\n| where AssignedRoles has_any (PrivilegedRoles)\n| distinct AccountUPN;\nlet BaselineData = SigninLogs\n| where TimeGenerated between (ago(30d) .. ago(7d))\n| where UserPrincipalName in (PrivilegedUsers)\n| where ResultType == \"0\"\n| summarize \n    BaselineCountries = make_set(tostring(LocationDetails.countryOrRegion)),\n    BaselineIPs = make_set(IPAddress),\n    BaselineApps = make_set(AppDisplayName)\n    by UserPrincipalName;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName in (PrivilegedUsers)\n| where ResultType == \"0\"\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| join kind=leftouter BaselineData on UserPrincipalName\n| extend \n    NewCountry = not(set_has_element(BaselineCountries, Country)),\n    NewIP = not(set_has_element(BaselineIPs, IPAddress)),\n    NewApp = not(set_has_element(BaselineApps, AppDisplayName))\n| where NewCountry or NewIP or NewApp\n| extend AnomalyType = case(\n    NewCountry, \"🔴 New Country\",\n    NewIP and NewApp, \"🟠 New IP + App\",\n    NewIP, \"🟡 New IP\",\n    NewApp, \"🟡 New App\",\n    \"Unknown\"\n)\n| project AnomalyType, UserPrincipalName, TimeGenerated, IPAddress, Country, AppDisplayName, NewCountry, NewIP, NewApp\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "⚠️ Privileged Account Anomalies (New Location/IP/App)",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - privileged anomalies",
+            "id": "2226b484-2b7e-4d80-9494-221b3b99a047"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Break Glass Account Usage\nlet BreakGlassPatterns = dynamic([\"breakglass\", \"break-glass\", \"emergency\", \"emer-admin\", \"bg-admin\", \"bga-\"]);\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName has_any (BreakGlassPatterns) or UserDisplayName has_any (BreakGlassPatterns)\n| project \n    TimeGenerated,\n    UserPrincipalName,\n    ResultType,\n    Result = iif(ResultType == \"0\", \"✅ Success\", \"❌ Failed\"),\n    IPAddress,\n    Country = tostring(LocationDetails.countryOrRegion),\n    AppDisplayName,\n    RiskLevel = RiskLevelDuringSignIn,\n    AuthMethod = AuthenticationRequirement\n| extend Alert = \"🚨 BREAK GLASS ACCOUNT USED\"\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "🚨 Break Glass Account Usage",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - breakglass",
+            "id": "0a2c4850-2893-4070-8cc7-cd7c563d669c"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Admin Sign-in Timeline\nlet PrivilegedRoles = dynamic([\"Global Administrator\", \"Security Administrator\", \"Privileged Role Administrator\"]);\nlet PrivilegedUsers = IdentityInfo\n| where TimeGenerated > ago(1d)\n| where AssignedRoles has_any (PrivilegedRoles)\n| distinct AccountUPN;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName in (PrivilegedUsers)\n| summarize \n    Successful = countif(ResultType == \"0\"),\n    Failed = countif(ResultType != \"0\"),\n    Risky = countif(RiskLevelDuringSignIn in (\"high\", \"medium\")) * 5\n    by bin(TimeGenerated, 1h)\n| render timechart",
+              "size": 0,
+              "title": "📈 Admin Sign-in Timeline",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "query - admin timeline",
+            "id": "4fba4e7b-c529-4376-b8b9-d9899d3e3218"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Privileged"
+      },
+      "name": "group - privileged",
+      "id": "907e593e-45f6-41fc-9a3a-4984adad14aa"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🌍 Geolocation & Impossible Travel Detection\n\n**MITRE ATT&CK:** T1078 - Valid Accounts\n\nIdentify suspicious geographic patterns including impossible travel, unusual countries, and location anomalies."
+            },
+            "name": "text - geo header",
+            "id": "a490e450-4bf4-49df-a511-7a7ac8a5a37c"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Impossible Travel Detection - Enhanced\nlet maxTravelSpeed = 800;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| extend Lat = toreal(LocationDetails.geoCoordinates.latitude)\n| extend Lon = toreal(LocationDetails.geoCoordinates.longitude)\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| extend City = tostring(LocationDetails.city)\n| where isnotempty(Lat) and isnotempty(Lon)\n| order by UserPrincipalName, TimeGenerated asc\n| serialize\n| extend PrevLat = prev(Lat), PrevLon = prev(Lon), PrevTime = prev(TimeGenerated), PrevUser = prev(UserPrincipalName), PrevCountry = prev(Country), PrevCity = prev(City)\n| where UserPrincipalName == PrevUser\n| extend TimeDiffHours = datetime_diff('minute', TimeGenerated, PrevTime) / 60.0\n| where TimeDiffHours > 0 and TimeDiffHours < 24\n| extend DistanceKm = geo_distance_2points(Lon, Lat, PrevLon, PrevLat) / 1000\n| extend SpeedKmH = DistanceKm / TimeDiffHours\n| where SpeedKmH > maxTravelSpeed and DistanceKm > 500\n| extend ThreatLevel = case(\n    SpeedKmH > 5000, \"🔴 CRITICAL - Physically Impossible\",\n    SpeedKmH > 2000, \"🔴 HIGH - Very Suspicious\",\n    \"🟠 MEDIUM - Unlikely Travel\"\n)\n| extend MITRETechnique = \"T1078 - Valid Accounts (Impossible Travel)\"\n| project \n    ThreatLevel,\n    UserPrincipalName, \n    FromLocation = strcat(PrevCity, \", \", PrevCountry),\n    ToLocation = strcat(City, \", \", Country),\n    DistanceKm = round(DistanceKm, 0),\n    TimeDiffMinutes = round(TimeDiffHours * 60, 0),\n    SpeedKmH = round(SpeedKmH, 0),\n    FromTime = PrevTime,\n    ToTime = TimeGenerated,\n    IPAddress,\n    MITRETechnique\n| order by SpeedKmH desc",
+              "size": 0,
+              "title": "✈️ Impossible Travel Detection",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ThreatLevel",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "SpeedKmH",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - impossible travel",
+            "id": "c02c3f2d-46b3-4aee-abe2-d00cfbfa1dae"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Anonymous IP / VPN / Tor Detection\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where RiskEventTypes_V2 has_any (\"anonymizedIPAddress\", \"suspiciousIPAddress\", \"unfamiliarFeatures\")\n| summarize \n    Count = count(),\n    SuccessCount = countif(ResultType == \"0\"),\n    Users = make_set(UserPrincipalName, 10),\n    UniqueUsers = dcount(UserPrincipalName),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5)\n    by IPAddress\n| extend ThreatLevel = case(\n    SuccessCount > 0, \"🔴 CRITICAL - Successful from Anonymous IP\",\n    Count > 10, \"🟠 HIGH - Multiple Attempts\",\n    \"🟡 MEDIUM - Detected\"\n)\n| extend MITRETechnique = \"T1090 - Proxy\"\n| project ThreatLevel, IPAddress, Count, SuccessCount, UniqueUsers, Users, Countries, MITRETechnique\n| order by SuccessCount desc, Count desc",
+              "size": 0,
+              "title": "🕵️ Anonymous IP / VPN / Tor Detection",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - anonymous ip",
+            "id": "c158c34a-0b5a-450c-ab84-4537bdaaf51b"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// High-Risk Countries (>50% Failure Rate)\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| where isnotempty(Country)\n| summarize \n    TotalAttempts = count(),\n    FailedAttempts = countif(ResultType != \"0\"),\n    SuccessfulAttempts = countif(ResultType == \"0\"),\n    UniqueUsers = dcount(UserPrincipalName),\n    UniqueIPs = dcount(IPAddress),\n    RiskyAttempts = countif(RiskLevelDuringSignIn in (\"high\", \"medium\"))\n    by Country\n| extend FailureRate = round(toreal(FailedAttempts) / TotalAttempts * 100, 2)\n| where FailureRate > 50 and FailedAttempts > 10\n| extend ThreatLevel = case(\n    FailureRate > 90, \"🔴 Critical\",\n    FailureRate > 75, \"🟠 High\",\n    \"🟡 Medium\"\n)\n| order by FailedAttempts desc",
+              "size": 0,
+              "title": "🌐 High-Risk Countries (>50% Failure Rate)",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - risky countries",
+            "id": "02175207-0c1d-4426-a02e-69a18d8c2bda"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Geographic Activity Map\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend Latitude = toreal(LocationDetails.geoCoordinates.latitude)\n| extend Longitude = toreal(LocationDetails.geoCoordinates.longitude)\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| extend City = tostring(LocationDetails.city)\n| where isnotempty(Latitude) and isnotempty(Longitude)\n| summarize \n    TotalSignIns = count(),\n    FailedSignIns = countif(ResultType != \"0\"),\n    UniqueUsers = dcount(UserPrincipalName)\n    by Country, City, Latitude, Longitude\n| extend FailureRate = round(toreal(FailedSignIns) / TotalSignIns * 100, 2)\n| extend ThreatLevel = case(\n    FailureRate > 80, \"Critical\",\n    FailureRate > 50, \"High\",\n    FailureRate > 20, \"Medium\",\n    \"Low\"\n)",
+              "size": 0,
+              "title": "🗺️ Sign-in Activity Map",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "map",
+              "mapSettings": {
+                "locInfo": "LatLong",
+                "latitude": "Latitude",
+                "longitude": "Longitude",
+                "sizeSettings": "TotalSignIns",
+                "sizeAggregation": "Sum",
+                "labelSettings": "City",
+                "legendMetric": "FailureRate",
+                "legendAggregation": "Max",
+                "itemColorSettings": {
+                  "nodeColorField": "FailureRate",
+                  "colorAggregation": "Max",
+                  "type": "heatmap",
+                  "heatmapPalette": "greenRed"
+                }
+              }
+            },
+            "name": "query - geo map",
+            "id": "0351e82a-cdcf-4829-8f37-947698bbda3d"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Geolocation"
+      },
+      "name": "group - geolocation",
+      "id": "86af489f-d4d6-4de1-b338-1be1c805da3c"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔍 Advanced Anomaly Detection\n\nIdentify unusual patterns using statistical analysis, behavioral baselines, and peer group comparison."
+            },
+            "name": "text - anomaly header",
+            "id": "453096e9-b535-4e49-9a03-8c8cbf843f4b"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Statistical Anomaly Detection - Z-Score Analysis\nlet BaselineDays = toint({BaselineDays});\nlet Baseline = SigninLogs\n| where TimeGenerated between (ago(BaselineDays * 1d) .. ago(7d))\n| where ResultType == \"0\"\n| summarize DailyLogins = count() by UserPrincipalName, bin(TimeGenerated, 1d)\n| summarize \n    AvgLogins = avg(DailyLogins),\n    StdDev = stdev(DailyLogins),\n    MinLogins = min(DailyLogins),\n    MaxLogins = max(DailyLogins)\n    by UserPrincipalName;\nlet CurrentActivity = SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| summarize TodayLogins = count() by UserPrincipalName;\nBaseline\n| join kind=inner CurrentActivity on UserPrincipalName\n| extend ZScore = round((TodayLogins - AvgLogins) / iif(StdDev == 0, 1.0, StdDev), 2)\n| where ZScore > 3 or ZScore < -2\n| extend AnomalyType = case(\n    ZScore > 5, \"🔴 CRITICAL - Extremely High Activity\",\n    ZScore > 3, \"🟠 HIGH - Unusual Spike\",\n    ZScore < -2, \"🟡 LOW - Unusual Drop\",\n    \"Normal\"\n)\n| extend DeviationPercent = round((TodayLogins - AvgLogins) / AvgLogins * 100, 1)\n| project AnomalyType, UserPrincipalName, TodayLogins, AvgLogins = round(AvgLogins, 1), StdDev = round(StdDev, 1), ZScore, DeviationPercent\n| order by abs(ZScore) desc\n| take 30",
+              "size": 0,
+              "title": "📊 Statistical Anomalies (Z-Score Analysis)",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "AnomalyType",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "ZScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - zscore",
+            "id": "b8d62ebf-91f0-489a-aba0-3f8b7606964f"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Off-Hours Activity Detection\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| extend HourOfDay = datetime_part(\"Hour\", TimeGenerated)\n| extend DayOfWeek = dayofweek(TimeGenerated) / 1d\n| extend IsWeekend = DayOfWeek in (0, 6)\n| extend IsOffHours = HourOfDay < 6 or HourOfDay > 22\n| where IsOffHours or IsWeekend\n| extend TimeCategory = case(\n    IsWeekend and IsOffHours, \"🔴 Weekend + Off-Hours\",\n    IsWeekend, \"🟠 Weekend\",\n    \"🟡 Off-Hours (Weekday)\"\n)\n| summarize \n    OffHoursSignIns = count(),\n    UniqueIPs = dcount(IPAddress),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    Apps = make_set(AppDisplayName, 5),\n    HoursActive = make_set(HourOfDay)\n    by UserPrincipalName, TimeCategory\n| order by OffHoursSignIns desc\n| take 30",
+              "size": 0,
+              "title": "🌙 Off-Hours & Weekend Activity",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - off hours",
+            "id": "2c41ca7a-b5fb-489d-9ba8-d7c24fcaf7d5"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Legacy Authentication (Security Risk)\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ClientAppUsed !in (\"Browser\", \"Mobile Apps and Desktop clients\")\n| where isnotempty(ClientAppUsed)\n| summarize \n    LegacySignIns = count(),\n    SuccessCount = countif(ResultType == \"0\"),\n    UniqueUsers = dcount(UserPrincipalName),\n    Users = make_set(UserPrincipalName, 10)\n    by ClientAppUsed\n| extend SecurityRisk = case(\n    ClientAppUsed has_any (\"IMAP\", \"POP\", \"SMTP\"), \"🔴 HIGH - Basic Auth\",\n    ClientAppUsed has \"Exchange ActiveSync\", \"🟠 MEDIUM - ActiveSync\",\n    \"🟡 LOW - Other Legacy\"\n)\n| extend MITRETechnique = \"T1078 - Valid Accounts (Legacy Auth)\"\n| order by LegacySignIns desc",
+              "size": 0,
+              "title": "📟 Legacy Authentication Usage",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - legacy auth",
+            "id": "97d52d67-1e55-4d45-b75b-fe7a8b4445fe"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// New Device Detection\nlet BaselineDays = toint({BaselineDays});\nlet knownDevices = SigninLogs\n| where TimeGenerated between (ago(BaselineDays * 1d) .. ago(7d))\n| where ResultType == \"0\"\n| extend DeviceId = tostring(DeviceDetail.deviceId)\n| where isnotempty(DeviceId)\n| distinct UserPrincipalName, DeviceId;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| extend DeviceId = tostring(DeviceDetail.deviceId)\n| extend DeviceName = tostring(DeviceDetail.displayName)\n| extend DeviceOS = tostring(DeviceDetail.operatingSystem)\n| extend Browser = tostring(DeviceDetail.browser)\n| extend TrustType = tostring(DeviceDetail.trustType)\n| where isnotempty(DeviceId)\n| join kind=leftanti knownDevices on UserPrincipalName, DeviceId\n| summarize \n    FirstSeen = min(TimeGenerated),\n    SignInCount = count(),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    IPs = make_set(IPAddress, 3)\n    by UserPrincipalName, DeviceId, DeviceName, DeviceOS, Browser, TrustType\n| extend RiskLevel = case(\n    TrustType != \"AzureAd\", \"🟠 Non-Managed Device\",\n    isempty(DeviceName), \"🟡 Unknown Device\",\n    \"🟢 New Managed Device\"\n)\n| order by FirstSeen desc\n| take 30",
+              "size": 0,
+              "title": "🆕 New Devices Detected",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - new devices",
+            "id": "0f77bf37-f556-4cc6-90fc-1483c2ae86c3"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Suspicious User Agents\nSigninLogs\n| where TimeGenerated {TimeRange}\n| extend UA = tostring(DeviceDetail.browser)\n| where isnotempty(UA)\n| where UA has_any (\"curl\", \"wget\", \"python\", \"powershell\", \"bot\", \"script\", \"scan\", \"exploit\", \"attack\", \"hack\", \"nikto\", \"sqlmap\", \"nmap\")\n    or UA matches regex @\"^[a-zA-Z]{1,5}$\"\n    or strlen(UA) < 10\n| summarize \n    Count = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    UniqueIPs = dcount(IPAddress),\n    SuccessCount = countif(ResultType == \"0\"),\n    Users = make_set(UserPrincipalName, 10)\n    by UA\n| extend ThreatLevel = case(\n    SuccessCount > 0, \"🔴 CRITICAL - Successful\",\n    Count > 20, \"🟠 HIGH - Multiple Attempts\",\n    \"🟡 MEDIUM - Suspicious\"\n)\n| order by SuccessCount desc, Count desc",
+              "size": 0,
+              "title": "🤖 Suspicious User Agents",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - suspicious ua",
+            "id": "7b114a28-05d3-408a-bbe4-387f406f1eaf"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Anomalies"
+      },
+      "name": "group - anomalies",
+      "id": "a6dbdc34-bfbe-408f-b285-b033d29a87fb"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🤖 Service Principal & Application Authentication\n\n**MITRE ATT&CK:** T1078.004 - Cloud Accounts\n\nMonitor non-interactive authentication including service principals, managed identities, and daemon applications."
+            },
+            "name": "text - sp header",
+            "id": "709105e9-8726-4c40-9fd4-67ded30caec3"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Service Principal Sign-in Overview\nAADServicePrincipalSignInLogs\n| where TimeGenerated {TimeRange}\n| summarize \n    TotalSignIns = count(),\n    SuccessfulSignIns = countif(ResultType == \"0\"),\n    FailedSignIns = countif(ResultType != \"0\"),\n    UniqueApps = dcount(ServicePrincipalName),\n    UniqueIPs = dcount(IPAddress),\n    UniqueResources = dcount(ResourceDisplayName)\n| extend FailureRate = round(toreal(FailedSignIns) / TotalSignIns * 100, 2)\n| project \n    Metric = pack_array(\"Total SP Sign-Ins\", \"Successful\", \"Failed\", \"Failure Rate %\", \"Unique Apps\", \"Unique IPs\"),\n    Value = pack_array(TotalSignIns, SuccessfulSignIns, FailedSignIns, FailureRate, UniqueApps, UniqueIPs)\n| mv-expand Metric to typeof(string), Value to typeof(string)",
+              "size": 4,
+              "title": "📊 Service Principal Metrics",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "numberFormat": {
+                    "unit": 17,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                }
+              }
+            },
+            "name": "query - sp metrics",
+            "id": "17ccbd0d-da9b-488c-9e50-7c66ea429bce"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Service Principal Failures - Potential Abuse\nAADServicePrincipalSignInLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| summarize \n    FailedAttempts = count(),\n    UniqueIPs = dcount(IPAddress),\n    IPList = make_set(IPAddress, 10),\n    Resources = make_set(ResourceDisplayName, 5),\n    ErrorCodes = make_set(ResultType, 5),\n    FirstAttempt = min(TimeGenerated),\n    LastAttempt = max(TimeGenerated)\n    by ServicePrincipalName, ServicePrincipalId\n| where FailedAttempts >= 10\n| extend ThreatLevel = case(\n    FailedAttempts > 100, \"🔴 CRITICAL - Credential Attack on App\",\n    FailedAttempts > 50, \"🟠 HIGH - Multiple Failures\",\n    \"🟡 MEDIUM - Elevated Failures\"\n)\n| project ThreatLevel, ServicePrincipalName, ServicePrincipalId, FailedAttempts, UniqueIPs, IPList, Resources, ErrorCodes, FirstAttempt, LastAttempt\n| order by FailedAttempts desc",
+              "size": 0,
+              "title": "⚠️ Service Principal Authentication Failures",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - sp failures",
+            "id": "c4afc39a-24b8-4bb8-ac3d-4e166906ad6f"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Service Principal Activity from New IPs\nlet BaselineDays = toint({BaselineDays});\nlet KnownIPs = AADServicePrincipalSignInLogs\n| where TimeGenerated between (ago(BaselineDays * 1d) .. ago(7d))\n| where ResultType == \"0\"\n| distinct ServicePrincipalName, IPAddress;\nAADServicePrincipalSignInLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| join kind=leftanti KnownIPs on ServicePrincipalName, IPAddress\n| summarize \n    NewIPCount = dcount(IPAddress),\n    SignIns = count(),\n    NewIPs = make_set(IPAddress, 10),\n    Resources = make_set(ResourceDisplayName, 5),\n    FirstSeen = min(TimeGenerated)\n    by ServicePrincipalName, ServicePrincipalId\n| extend RiskLevel = case(\n    NewIPCount > 5, \"🔴 HIGH - Multiple New IPs\",\n    NewIPCount > 2, \"🟠 MEDIUM - New IPs\",\n    \"🟡 LOW - New IP\"\n)\n| project RiskLevel, ServicePrincipalName, NewIPCount, SignIns, NewIPs, Resources, FirstSeen\n| order by NewIPCount desc",
+              "size": 0,
+              "title": "🆕 Service Principal Activity from New IPs",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - sp new ips",
+            "id": "a31906e3-5f42-4a31-949d-7cb52ef5a7d2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// High-Privilege Service Principal Activity\nAADServicePrincipalSignInLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| where ResourceDisplayName has_any (\"Graph\", \"Azure Resource Manager\", \"Azure Key Vault\", \"Azure Storage\", \"Office 365 Exchange Online\")\n| summarize \n    SignIns = count(),\n    UniqueIPs = dcount(IPAddress),\n    IPs = make_set(IPAddress, 5),\n    Resources = make_set(ResourceDisplayName),\n    LastActivity = max(TimeGenerated)\n    by ServicePrincipalName, ServicePrincipalId\n| extend RiskIndicator = case(\n    UniqueIPs > 5, \"🟠 Multiple IPs\",\n    SignIns > 1000, \"🟡 High Volume\",\n    \"🟢 Normal\"\n)\n| project RiskIndicator, ServicePrincipalName, SignIns, UniqueIPs, Resources, LastActivity\n| order by SignIns desc\n| take 20",
+              "size": 0,
+              "title": "🔑 High-Privilege Service Principal Activity",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - sp high priv",
+            "id": "3aacbc8b-42f0-425f-bb2c-28c57e17684c"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "ServicePrincipal"
+      },
+      "name": "group - serviceprincipal",
+      "id": "49a07378-4dfc-4171-9a32-dd2ef0217574"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## ⚠️ Risk Analysis & Threat Intelligence\n\nCorrelate sign-in data with Azure AD Identity Protection risk signals and external threat intelligence."
+            },
+            "name": "text - risk header",
+            "id": "f4e8bf61-f720-4451-954b-7fb9004f28c2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Threat Intelligence Correlation\nlet MaliciousIPs = ThreatIntelligenceIndicator\n| where TimeGenerated > ago(30d)\n| where isnotempty(NetworkIP)\n| where Active == true\n| where ConfidenceScore >= 50\n| distinct NetworkIP, ThreatType, Description, ConfidenceScore;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| join kind=inner MaliciousIPs on $left.IPAddress == $right.NetworkIP\n| summarize \n    SignInCount = count(),\n    SuccessCount = countif(ResultType == \"0\"),\n    TargetedUsers = dcount(UserPrincipalName),\n    Users = make_set(UserPrincipalName, 10),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by IPAddress, ThreatType, Description, ConfidenceScore\n| extend ThreatLevel = case(\n    SuccessCount > 0, \"🔴 CRITICAL - Successful from Known Malicious IP\",\n    ConfidenceScore >= 80, \"🔴 HIGH - High Confidence Threat\",\n    ConfidenceScore >= 50, \"🟠 MEDIUM - Moderate Confidence\",\n    \"🟡 LOW\"\n)\n| project ThreatLevel, IPAddress, ThreatType, ConfidenceScore, SignInCount, SuccessCount, TargetedUsers, Users, FirstSeen, LastSeen\n| order by SuccessCount desc, ConfidenceScore desc",
+              "size": 0,
+              "title": "🎯 Threat Intelligence Matches",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - ti correlation",
+            "id": "b4920131-2cea-4b3b-a401-3fe3a99ec6b8"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// High Risk Users from Identity Protection\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where RiskLevelAggregated in (\"high\", \"medium\") or RiskLevelDuringSignIn in (\"high\", \"medium\")\n| summarize \n    RiskySignIns = count(),\n    HighRiskSignIns = countif(RiskLevelDuringSignIn == \"high\"),\n    MediumRiskSignIns = countif(RiskLevelDuringSignIn == \"medium\"),\n    SuccessfulRisky = countif(ResultType == \"0\"),\n    FailedRisky = countif(ResultType != \"0\"),\n    RiskEvents = make_set(RiskEventTypes_V2, 10),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    IPs = make_set(IPAddress, 10),\n    LastRiskySignIn = max(TimeGenerated)\n    by UserPrincipalName, RiskLevelAggregated\n| extend UserRiskScore = (HighRiskSignIns * 10) + (MediumRiskSignIns * 5) + (SuccessfulRisky * 25)\n| extend ThreatLevel = case(\n    SuccessfulRisky > 0 and HighRiskSignIns > 0, \"🔴 CRITICAL - High Risk with Success\",\n    RiskLevelAggregated == \"high\", \"🔴 HIGH Risk User\",\n    RiskLevelAggregated == \"medium\", \"🟠 MEDIUM Risk User\",\n    \"🟡 LOW\"\n)\n| project ThreatLevel, UserPrincipalName, RiskLevelAggregated, UserRiskScore, HighRiskSignIns, MediumRiskSignIns, SuccessfulRisky, RiskEvents, Countries, LastRiskySignIn\n| order by UserRiskScore desc\n| take 30",
+              "size": 0,
+              "title": "👤 High Risk Users (Identity Protection)",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ThreatLevel",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "UserRiskScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - risky users",
+            "id": "fae495fc-ef30-4981-a159-a0c519996c48"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Risk Events Distribution\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where isnotempty(RiskEventTypes_V2) and RiskEventTypes_V2 != \"[]\"\n| mv-expand RiskEvent = todynamic(RiskEventTypes_V2)\n| extend RiskEventStr = tostring(RiskEvent)\n| where isnotempty(RiskEventStr)\n| summarize \n    Count = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    SuccessCount = countif(ResultType == \"0\")\n    by RiskEventStr\n| extend RiskEventDescription = case(\n    RiskEventStr == \"unfamiliarFeatures\", \"Unfamiliar sign-in properties\",\n    RiskEventStr == \"anonymizedIPAddress\", \"Anonymous IP (VPN/Tor)\",\n    RiskEventStr == \"maliciousIPAddress\", \"Malicious IP address\",\n    RiskEventStr == \"leakedCredentials\", \"Leaked credentials\",\n    RiskEventStr == \"mcasImpossibleTravel\", \"Impossible travel\",\n    RiskEventStr == \"suspiciousIPAddress\", \"Suspicious IP\",\n    RiskEventStr == \"adminConfirmedUserCompromised\", \"Admin confirmed compromised\",\n    RiskEventStr\n)\n| extend Severity = case(\n    RiskEventStr in (\"leakedCredentials\", \"adminConfirmedUserCompromised\", \"maliciousIPAddress\"), \"🔴 Critical\",\n    RiskEventStr in (\"anonymizedIPAddress\", \"mcasImpossibleTravel\"), \"🟠 High\",\n    \"🟡 Medium\"\n)\n| project Severity, RiskEventStr, RiskEventDescription, Count, UniqueUsers, SuccessCount\n| order by Count desc",
+              "size": 0,
+              "title": "📊 Risk Events Distribution",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - risk events",
+            "id": "28e46911-6c68-4c6e-b657-dd9384f670fb"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Risk Detection Timeline\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where RiskLevelDuringSignIn in (\"high\", \"medium\", \"low\")\n| summarize \n    High = countif(RiskLevelDuringSignIn == \"high\"),\n    Medium = countif(RiskLevelDuringSignIn == \"medium\"),\n    Low = countif(RiskLevelDuringSignIn == \"low\")\n    by bin(TimeGenerated, 1h)\n| render timechart",
+              "size": 0,
+              "title": "📈 Risk Detection Timeline",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "query - risk timeline",
+            "id": "2504a29f-1936-49fb-8641-e564dfe9428a"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "RiskAnalysis"
+      },
+      "name": "group - risk",
+      "id": "46130096-b390-4409-9d74-1eb07be9ece7"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔐 MFA Health & Authentication Analysis\n\nAnalyze Multi-Factor Authentication coverage, authentication methods, and security gaps."
+            },
+            "name": "text - mfa header",
+            "id": "b4b5d611-4da3-4356-8bb1-311a730c75a9"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// MFA Coverage Summary\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| summarize \n    TotalSuccessful = count(),\n    MFARequired = countif(AuthenticationRequirement == \"multiFactorAuthentication\"),\n    SingleFactor = countif(AuthenticationRequirement == \"singleFactorAuthentication\"),\n    Passwordless = countif(AuthenticationDetails has_any (\"FIDO2\", \"WindowsHelloForBusiness\", \"Passkey\"))\n| extend \n    MFARate = round(toreal(MFARequired) / TotalSuccessful * 100, 1),\n    SingleFactorRate = round(toreal(SingleFactor) / TotalSuccessful * 100, 1),\n    PasswordlessRate = round(toreal(Passwordless) / TotalSuccessful * 100, 1)\n| extend MFAStatus = case(\n    MFARate >= 95, \"🟢 Excellent\",\n    MFARate >= 80, \"🟡 Good\",\n    MFARate >= 50, \"🟠 Needs Improvement\",\n    \"🔴 Critical Gap\"\n)\n| project \n    Metric = pack_array(\"Total Sign-ins\", \"MFA Required\", \"Single Factor\", \"MFA Rate %\", \"Passwordless %\", \"MFA Status\"),\n    Value = pack_array(TotalSuccessful, MFARequired, SingleFactor, MFARate, PasswordlessRate, MFAStatus)\n| mv-expand Metric to typeof(string), Value to typeof(string)",
+              "size": 4,
+              "title": "📊 MFA Coverage Summary",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "numberFormat": {
+                    "unit": 17,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                }
+              }
+            },
+            "name": "query - mfa summary",
+            "id": "c96f6e26-eb1b-4942-b6df-dedf19073792"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Users Without MFA - Security Gap\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| where AuthenticationRequirement == \"singleFactorAuthentication\"\n| summarize \n    SingleFactorLogins = count(),\n    UniqueIPs = dcount(IPAddress),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    Apps = make_set(AppDisplayName, 5),\n    LastLogin = max(TimeGenerated)\n    by UserPrincipalName\n| extend SecurityRisk = case(\n    SingleFactorLogins > 100, \"🔴 CRITICAL - High Exposure\",\n    SingleFactorLogins > 50, \"🟠 HIGH - Elevated Risk\",\n    SingleFactorLogins > 20, \"🟡 MEDIUM\",\n    \"🟢 LOW\"\n)\n| project SecurityRisk, UserPrincipalName, SingleFactorLogins, UniqueIPs, Countries, Apps, LastLogin\n| order by SingleFactorLogins desc\n| take 50",
+              "size": 0,
+              "title": "⚠️ Users Without MFA (Security Gap)",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "SecurityRisk",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "SingleFactorLogins",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - no mfa users",
+            "id": "3c87ec6c-cbb8-4161-bada-b242c43e33a5"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Authentication Methods Distribution\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| mv-expand AuthDetail = parse_json(AuthenticationDetails)\n| extend AuthMethod = tostring(AuthDetail.authenticationMethod)\n| extend AuthSucceeded = tostring(AuthDetail.succeeded)\n| where AuthSucceeded == \"true\" and isnotempty(AuthMethod)\n| summarize Count = count() by AuthMethod\n| extend SecurityLevel = case(\n    AuthMethod in (\"FIDO2\", \"Passkey\", \"WindowsHelloForBusiness\"), \"🟢 High - Passwordless\",\n    AuthMethod has_any (\"Authenticator\", \"PhoneAppNotification\", \"PhoneAppOTP\"), \"🟢 Good - Authenticator\",\n    AuthMethod has_any (\"SMS\", \"Text\", \"Phone\", \"Voice\"), \"🟠 Medium - Phone-based\",\n    AuthMethod in (\"Password\", \"password\"), \"🔴 Low - Password Only\",\n    \"🟡 Other\"\n)\n| project SecurityLevel, AuthMethod, Count\n| order by Count desc",
+              "size": 2,
+              "title": "🔑 Authentication Methods Distribution",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - auth methods",
+            "id": "6c5593de-8e07-4aee-b6f0-b0be02f5845c"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Applications Without MFA Enforcement\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"0\"\n| summarize \n    TotalLogins = count(),\n    MFARequired = countif(AuthenticationRequirement == \"multiFactorAuthentication\"),\n    SingleFactor = countif(AuthenticationRequirement == \"singleFactorAuthentication\"),\n    UniqueUsers = dcount(UserPrincipalName)\n    by AppDisplayName\n| where TotalLogins > 10\n| extend MFAEnforcementRate = round(toreal(MFARequired) / TotalLogins * 100, 1)\n| extend Status = case(\n    MFAEnforcementRate == 100, \"✅ Fully Protected\",\n    MFAEnforcementRate >= 80, \"🟡 Mostly Protected\",\n    MFAEnforcementRate >= 50, \"🟠 Partial Protection\",\n    \"🔴 Needs MFA Policy\"\n)\n| project Status, AppDisplayName, TotalLogins, MFAEnforcementRate, SingleFactor, UniqueUsers\n| order by MFAEnforcementRate asc, TotalLogins desc\n| take 30",
+              "size": 0,
+              "title": "📱 Application MFA Enforcement",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - app mfa",
+            "id": "02b91413-1682-430f-896b-bc84d88704e2"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "MFAAnalysis"
+      },
+      "name": "group - mfa",
+      "id": "6851435e-0765-412d-85f3-9986778de91c"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔎 User Investigation\n\nDeep-dive investigation for a specific user. Enter a User Principal Name (UPN) in the **Investigate User** parameter above."
+            },
+            "name": "text - user investigation header",
+            "id": "1b563577-26d8-4120-b1ed-f760a817a729"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// User Profile Summary\nlet TargetUser = \"{SelectedUser}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ TargetUser or isempty(TargetUser)\n| summarize \n    TotalSignIns = count(),\n    SuccessfulSignIns = countif(ResultType == \"0\"),\n    FailedSignIns = countif(ResultType != \"0\"),\n    RiskySignIns = countif(RiskLevelDuringSignIn in (\"high\", \"medium\")),\n    MFASignIns = countif(AuthenticationRequirement == \"multiFactorAuthentication\"),\n    UniqueIPs = dcount(IPAddress),\n    UniqueCountries = dcount(tostring(LocationDetails.countryOrRegion)),\n    UniqueDevices = dcount(tostring(DeviceDetail.deviceId)),\n    UniqueApps = dcount(AppDisplayName),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by UserPrincipalName\n| extend \n    FailureRate = round(toreal(FailedSignIns) / TotalSignIns * 100, 1),\n    MFARate = round(toreal(MFASignIns) / SuccessfulSignIns * 100, 1)\n| take 1",
+              "size": 4,
+              "title": "👤 User Profile Summary",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true
+              }
+            },
+            "name": "query - user profile",
+            "id": "ea002195-545d-4064-bb9f-afec197a230d"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// User Sign-in Timeline\nlet TargetUser = \"{SelectedUser}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ TargetUser or isempty(TargetUser)\n| project \n    TimeGenerated,\n    Result = iif(ResultType == \"0\", \"✅ Success\", \"❌ Failed\"),\n    ResultType,\n    IPAddress,\n    Country = tostring(LocationDetails.countryOrRegion),\n    City = tostring(LocationDetails.city),\n    AppDisplayName,\n    DeviceName = tostring(DeviceDetail.displayName),\n    Browser = tostring(DeviceDetail.browser),\n    OS = tostring(DeviceDetail.operatingSystem),\n    RiskLevel = RiskLevelDuringSignIn,\n    AuthRequirement = AuthenticationRequirement,\n    ConditionalAccessStatus\n| order by TimeGenerated desc\n| take 100",
+              "size": 0,
+              "title": "📋 Sign-in Activity Timeline",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - user timeline",
+            "id": "1d841675-777e-46c8-b26f-0e4aa7d00679"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// User IP Addresses\nlet TargetUser = \"{SelectedUser}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ TargetUser or isempty(TargetUser)\n| summarize \n    SignIns = count(),\n    SuccessCount = countif(ResultType == \"0\"),\n    FailedCount = countif(ResultType != \"0\"),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion)),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by IPAddress\n| order by SignIns desc",
+              "size": 0,
+              "title": "🌐 IP Addresses Used",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - user ips",
+            "id": "0814409e-b9de-497a-996c-a9649ea6eb29"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// User Applications\nlet TargetUser = \"{SelectedUser}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ TargetUser or isempty(TargetUser)\n| where ResultType == \"0\"\n| summarize \n    SignIns = count(),\n    LastAccess = max(TimeGenerated)\n    by AppDisplayName\n| order by SignIns desc",
+              "size": 0,
+              "title": "📱 Applications Accessed",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - user apps",
+            "id": "72d594b3-c73a-46ee-90ab-9559238e3566"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "UserInvestigation"
+      },
+      "name": "group - userinvestigation",
+      "id": "26a52796-fefe-4594-95cd-bb33779b992d"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🌐 IP Address Investigation\n\nDeep-dive investigation for a specific IP address. Enter an IP in the **Investigate IP Address** parameter above."
+            },
+            "name": "text - ip investigation header",
+            "id": "03baa571-ee3e-4ba7-b319-82b3429ab083"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// IP Profile Summary\nlet TargetIP = \"{SelectedIP}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where IPAddress == TargetIP or isempty(TargetIP)\n| summarize \n    TotalAttempts = count(),\n    SuccessfulAttempts = countif(ResultType == \"0\"),\n    FailedAttempts = countif(ResultType != \"0\"),\n    RiskyAttempts = countif(RiskLevelDuringSignIn in (\"high\", \"medium\")),\n    UniqueUsers = dcount(UserPrincipalName),\n    UniqueApps = dcount(AppDisplayName),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion)),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by IPAddress\n| extend \n    FailureRate = round(toreal(FailedAttempts) / TotalAttempts * 100, 1),\n    ThreatIndicator = case(\n        SuccessfulAttempts > 0 and FailedAttempts > 20, \"🔴 CRITICAL - Success After Failures\",\n        UniqueUsers > 10, \"🟠 HIGH - Password Spray Candidate\",\n        FailedAttempts > 50, \"🟠 HIGH - Brute Force Candidate\",\n        RiskyAttempts > 0, \"🟡 MEDIUM - Risky Activity\",\n        \"🟢 Normal\"\n    )\n| take 1",
+              "size": 4,
+              "title": "🌐 IP Profile Summary",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true
+              }
+            },
+            "name": "query - ip profile",
+            "id": "38e5a6bd-1a4e-42df-a350-e3996cdc906d"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// IP Activity Timeline\nlet TargetIP = \"{SelectedIP}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where IPAddress == TargetIP or isempty(TargetIP)\n| project \n    TimeGenerated,\n    UserPrincipalName,\n    Result = iif(ResultType == \"0\", \"✅ Success\", \"❌ Failed\"),\n    ResultType,\n    Country = tostring(LocationDetails.countryOrRegion),\n    City = tostring(LocationDetails.city),\n    AppDisplayName,\n    RiskLevel = RiskLevelDuringSignIn,\n    AuthRequirement = AuthenticationRequirement\n| order by TimeGenerated desc\n| take 100",
+              "size": 0,
+              "title": "📋 IP Activity Timeline",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "name": "query - ip timeline",
+            "id": "d01c72d3-0f93-4850-95a5-dcd92f92ce6d"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Users Targeted from IP\nlet TargetIP = \"{SelectedIP}\";\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where IPAddress == TargetIP or isempty(TargetIP)\n| summarize \n    Attempts = count(),\n    SuccessCount = countif(ResultType == \"0\"),\n    FailedCount = countif(ResultType != \"0\"),\n    Apps = make_set(AppDisplayName, 5),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by UserPrincipalName\n| extend Status = case(\n    SuccessCount > 0 and FailedCount > 5, \"🔴 Compromised?\",\n    SuccessCount > 0, \"✅ Successful\",\n    \"❌ Failed Only\"\n)\n| order by Attempts desc",
+              "size": 0,
+              "title": "👤 Users Targeted from This IP",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - ip users",
+            "id": "a0284d41-6a75-4a95-9c26-a1e5d7db2131"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Threat Intelligence Check\nlet TargetIP = \"{SelectedIP}\";\nThreatIntelligenceIndicator\n| where TimeGenerated > ago(90d)\n| where NetworkIP == TargetIP or isempty(TargetIP)\n| where Active == true\n| project \n    ThreatType,\n    Description,\n    ConfidenceScore,\n    ThreatSeverity,\n    Source = SourceSystem,\n    FirstReported = TimeGenerated,\n    ExpirationDateTime\n| order by ConfidenceScore desc",
+              "size": 0,
+              "title": "🎯 Threat Intelligence Lookup",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - ip ti",
+            "id": "c712c581-0baa-4edc-8a53-d31f82001e0d"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "IPInvestigation"
+      },
+      "name": "group - ipinvestigation",
+      "id": "dd669edb-ea51-4972-9085-4ba05b233ddd"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🛡️ Remediation Actions\n\nTrigger automated response playbooks directly from this workbook. Select a compromised user or device and execute remediation actions.\n\n---\n\n### 📦 Deployment Instructions\n\n**Playbook ARM Templates Location:**\n```\nc:\\Users\\dalonso\\Downloads\\Sentinel-Remediation-Playbooks\\\n```\n\n**Files Available:**\n| File | Purpose |\n|------|----------|\n| `README.md` | Full deployment guide and permissions |\n| `Deploy-All-Playbooks.json` | API connections template |\n| `Disable-AADUser.json` | Disable user account |\n| `Reset-AADUserPassword.json` | Force password reset |\n| `Revoke-AADUserSessions.json` | Revoke all sessions |\n| `Block-AADSignIn.json` | Block user sign-in |\n| `Confirm-AADUserCompromised.json` | Mark user compromised |\n| `Full-UserRemediation.json` | All user actions combined |\n| `Isolate-MDEDevice.json` | Network isolate device |\n| `Run-MDE-AVScan.json` | Trigger AV scan |\n| `Collect-MDE-Investigation.json` | Collect forensic package |\n| `Restrict-MDEAppExecution.json` | Restrict app execution |\n| `Add-ThreatIndicator.json` | Add IP to threat intel |\n| `Add-BlockedLocation.json` | Block IP in Conditional Access |\n\n**Quick Deploy (PowerShell):**\n```powershell\n$RG = 'rg-sentinel-playbooks'\nNew-AzResourceGroup -Name $RG -Location 'eastus'\nGet-ChildItem '.\\*.json' | ForEach-Object {\n  New-AzResourceGroupDeployment -ResourceGroupName $RG -TemplateFile $_.FullName\n}\n```\n\n**Post-Deployment:**\n1. Authorize API connections in Azure Portal\n2. Assign Managed Identity permissions (see README.md)\n3. Update subscription/resource group parameters below\n\n---\n\n> ⚠️ **Prerequisites:** Ensure the Logic App playbooks are deployed and you have appropriate permissions to trigger them.\n\n| Action | Description | Playbook Required |\n|--------|-------------|-------------------|\n| 🚫 **Disable User** | Disables the user account in Entra ID | Disable-AADUser |\n| 🔑 **Reset Password** | Forces password reset on next login | Reset-AADUserPassword |\n| 🔓 **Revoke Sessions** | Revokes all refresh tokens and sessions | Revoke-AADUserSessions |\n| 📧 **Block Sign-in** | Blocks the user from signing in | Block-AADSignIn |\n| 💻 **Isolate Device** | Isolates device from network (MDE) | Isolate-MDEDevice |\n| 🔍 **Run AV Scan** | Triggers antivirus scan on device | Run-MDE-AVScan |\n| 📋 **Collect Evidence** | Collects investigation package | Collect-MDE-Investigation |"
+            },
+            "name": "text - remediation header",
+            "id": "d758173f-8568-4566-bb9c-9d6ab11d6d45"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "remediation-subscription",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "RemediationSubscription",
+                  "type": 6,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "includeAll": false,
+                    "showDefault": false
+                  },
+                  "label": "Subscription"
+                },
+                {
+                  "id": "remediation-resourcegroup",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "PlaybookResourceGroup",
+                  "type": 1,
+                  "isRequired": true,
+                  "value": "SentinelPlaybooks-RG",
+                  "label": "Playbook Resource Group"
+                }
+              ],
+              "style": "pills"
+            },
+            "name": "parameters - remediation config",
+            "id": "b9d1c533-2031-4a5e-b59f-7ed80ee7427b"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n### 👤 User Remediation Actions"
+            },
+            "name": "text - user remediation",
+            "id": "43212d12-d784-4782-addd-ff6bc1d08fcb"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Users with High Risk or Compromise Indicators - Select for Remediation\nSigninLogs\n| where TimeGenerated > ago(24h)\n| summarize \n    TotalSignIns = count(),\n    FailedAttempts = countif(ResultType != \"0\"),\n    HighRiskSuccess = countif(ResultType == \"0\" and RiskLevelDuringSignIn == \"high\"),\n    MediumRiskSuccess = countif(ResultType == \"0\" and RiskLevelDuringSignIn == \"medium\"),\n    UniqueIPs = dcount(IPAddress),\n    UniqueCountries = dcount(tostring(LocationDetails.countryOrRegion)),\n    LastSignIn = max(TimeGenerated),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    RiskEvents = make_set(RiskEventTypes_V2, 5)\n    by UserPrincipalName, UserId\n| extend RiskScore = (FailedAttempts / 10) + (HighRiskSuccess * 30) + (MediumRiskSuccess * 10) + (UniqueCountries * 5)\n| where RiskScore > 10 or HighRiskSuccess > 0\n| extend Status = case(\n    HighRiskSuccess > 0, \"🔴 COMPROMISED\",\n    MediumRiskSuccess > 0, \"🟠 AT RISK\",\n    FailedAttempts > 50, \"🟡 UNDER ATTACK\",\n    \"⚪ MONITOR\"\n)\n| project Status, UserPrincipalName, UserId, RiskScore, HighRiskSuccess, MediumRiskSuccess, FailedAttempts, UniqueCountries, Countries, LastSignIn\n| order by RiskScore desc\n| take 25",
+              "size": 0,
+              "title": "👤 Select User for Remediation (Click Row to Select)",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "exportFieldName": "UserPrincipalName",
+              "exportParameterName": "SelectedRemediationUser",
+              "exportDefaultValue": "",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "COMPROMISED",
+                          "representation": "red",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "AT RISK",
+                          "representation": "orange",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "UNDER ATTACK",
+                          "representation": "yellow",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "gray",
+                          "text": "{0}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "RiskScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - remediation users",
+            "id": "ec7a2197-8032-4ca7-86a2-a442ccbfcbe9"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "#### Selected User: **{SelectedRemediationUser}**\n\n> Click on a user above to select them for remediation, then use the action buttons below."
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedRemediationUser",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "text - selected user",
+            "id": "c0c444d6-a861-4aaf-a610-845c98cfc10c"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "list",
+              "links": [
+                {
+                  "id": "action-disable-user",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🚫 Disable User Account",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Disable-AADUser/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"userPrincipalName\": \"{SelectedRemediationUser}\", \"action\": \"disable\", \"reason\": \"Disabled via Security Workbook - Compromised Account\"}",
+                    "httpMethod": "POST",
+                    "title": "Disable User Account",
+                    "description": "## ⚠️ Confirm User Disable\n\nYou are about to **disable** the following user account:\n\n**User:** {SelectedRemediationUser}\n\nThis will:\n- Prevent the user from signing in\n- Block all active sessions\n- Require admin intervention to re-enable\n\nAre you sure you want to proceed?",
+                    "actionName": "Disable-AADUser",
+                    "runLabel": "Disable User"
+                  }
+                },
+                {
+                  "id": "action-reset-password",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🔑 Force Password Reset",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Reset-AADUserPassword/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"userPrincipalName\": \"{SelectedRemediationUser}\", \"forceChangeOnNextLogin\": true, \"reason\": \"Password reset via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Force Password Reset",
+                    "description": "## 🔑 Confirm Password Reset\n\nYou are about to **force a password reset** for:\n\n**User:** {SelectedRemediationUser}\n\nThis will:\n- Generate a temporary password\n- Force the user to change password on next login\n- Invalidate current password\n\nAre you sure you want to proceed?",
+                    "actionName": "Reset-AADUserPassword",
+                    "runLabel": "Reset Password"
+                  }
+                },
+                {
+                  "id": "action-revoke-sessions",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🔓 Revoke All Sessions",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Revoke-AADUserSessions/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"userPrincipalName\": \"{SelectedRemediationUser}\", \"revokeRefreshTokens\": true, \"reason\": \"Sessions revoked via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Revoke User Sessions",
+                    "description": "## 🔓 Confirm Session Revocation\n\nYou are about to **revoke all sessions and tokens** for:\n\n**User:** {SelectedRemediationUser}\n\nThis will:\n- Invalidate all refresh tokens\n- Force re-authentication on all devices\n- Log out user from all active sessions\n\nAre you sure you want to proceed?",
+                    "actionName": "Revoke-AADUserSessions",
+                    "runLabel": "Revoke Sessions"
+                  }
+                },
+                {
+                  "id": "action-block-signin",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "📧 Block Sign-In",
+                  "style": "secondary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Block-AADSignIn/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"userPrincipalName\": \"{SelectedRemediationUser}\", \"blockSignIn\": true, \"reason\": \"Sign-in blocked via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Block User Sign-In",
+                    "description": "## 📧 Confirm Sign-In Block\n\nYou are about to **block sign-in** for:\n\n**User:** {SelectedRemediationUser}\n\nThis will:\n- Prevent any new sign-in attempts\n- Existing sessions may remain active until token expiry\n\nAre you sure you want to proceed?",
+                    "actionName": "Block-AADSignIn",
+                    "runLabel": "Block Sign-In"
+                  }
+                },
+                {
+                  "id": "action-confirm-compromise",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "⚠️ Confirm User Compromised",
+                  "style": "secondary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Confirm-AADUserCompromised/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"userPrincipalName\": \"{SelectedRemediationUser}\", \"riskState\": \"confirmedCompromised\", \"reason\": \"Confirmed compromised via Security Workbook investigation\"}",
+                    "httpMethod": "POST",
+                    "title": "Confirm User Compromised",
+                    "description": "## ⚠️ Confirm User Compromised\n\nYou are about to **confirm the user as compromised** in Identity Protection:\n\n**User:** {SelectedRemediationUser}\n\nThis will:\n- Mark user risk as 'Confirmed Compromised'\n- Trigger any configured risk-based policies\n- Add to risky users list\n\nAre you sure you want to proceed?",
+                    "actionName": "Confirm-AADUserCompromised",
+                    "runLabel": "Confirm Compromised"
+                  }
+                },
+                {
+                  "id": "action-full-remediation",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🛡️ FULL REMEDIATION (All Actions)",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Full-UserRemediation/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"userPrincipalName\": \"{SelectedRemediationUser}\", \"actions\": [\"disable\", \"resetPassword\", \"revokeSessions\", \"confirmCompromised\"], \"reason\": \"Full remediation via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Full User Remediation",
+                    "description": "## 🛡️ FULL REMEDIATION\n\nYou are about to perform **FULL REMEDIATION** on:\n\n**User:** {SelectedRemediationUser}\n\nThis will execute ALL of the following:\n- ✅ Disable user account\n- ✅ Force password reset\n- ✅ Revoke all sessions and tokens\n- ✅ Confirm user as compromised\n\n⚠️ **This is a critical action.** Are you sure you want to proceed?",
+                    "actionName": "Full-UserRemediation",
+                    "runLabel": "Execute Full Remediation"
+                  }
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedRemediationUser",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "links - user actions",
+            "id": "ead35972-7077-461e-bd48-76bc2e108f6f"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n### 💻 Device Remediation Actions"
+            },
+            "name": "text - device remediation",
+            "id": "c8edf7b4-c4f8-472f-bac9-3ec5db205986"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Devices with Suspicious Activity - From Sign-in logs\nSigninLogs\n| where TimeGenerated > ago(24h)\n| where ResultType == \"0\" and RiskLevelDuringSignIn in (\"high\", \"medium\")\n| extend DeviceName = tostring(DeviceDetail.displayName)\n| extend DeviceId = tostring(DeviceDetail.deviceId)\n| extend DeviceOS = tostring(DeviceDetail.operatingSystem)\n| extend DeviceTrustType = tostring(DeviceDetail.trustType)\n| extend DeviceCompliant = tostring(DeviceDetail.isCompliant)\n| where isnotempty(DeviceId) and DeviceId != \"\"\n| summarize \n    RiskySignIns = count(),\n    HighRisk = countif(RiskLevelDuringSignIn == \"high\"),\n    MediumRisk = countif(RiskLevelDuringSignIn == \"medium\"),\n    Users = make_set(UserPrincipalName, 5),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 5),\n    LastActivity = max(TimeGenerated)\n    by DeviceId, DeviceName, DeviceOS, DeviceTrustType, DeviceCompliant\n| extend RiskLevel = case(\n    HighRisk > 0, \"🔴 HIGH RISK\",\n    MediumRisk > 2, \"🟠 ELEVATED\",\n    \"🟡 MONITOR\"\n)\n| project RiskLevel, DeviceName, DeviceId, DeviceOS, DeviceTrustType, DeviceCompliant, RiskySignIns, HighRisk, Users, LastActivity\n| order by HighRisk desc, RiskySignIns desc\n| take 20",
+              "size": 0,
+              "title": "💻 Select Device for Remediation (Click Row to Select)",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "exportFieldName": "DeviceId",
+              "exportParameterName": "SelectedRemediationDevice",
+              "exportDefaultValue": "",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "RiskLevel",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "HIGH",
+                          "representation": "red",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "ELEVATED",
+                          "representation": "orange",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "yellow",
+                          "text": "{0}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - remediation devices",
+            "id": "8e2d7f9c-f188-4343-8522-7e90d09ceafc"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "#### Selected Device ID: **{SelectedRemediationDevice}**\n\n> Click on a device above to select it for remediation, then use the action buttons below."
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedRemediationDevice",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "text - selected device",
+            "id": "18e4cca1-f165-43f3-a0a5-6b9f363359b8"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "list",
+              "links": [
+                {
+                  "id": "action-isolate-device",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🔒 Isolate Device (MDE)",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Isolate-MDEDevice/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"deviceId\": \"{SelectedRemediationDevice}\", \"isolationType\": \"Full\", \"comment\": \"Device isolated via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Isolate Device",
+                    "description": "## 🔒 Confirm Device Isolation\n\nYou are about to **isolate** the following device from the network:\n\n**Device ID:** {SelectedRemediationDevice}\n\nThis will:\n- Disconnect the device from the network\n- Allow only Defender for Endpoint communication\n- Require manual un-isolation\n\n⚠️ **User will lose network access.** Are you sure you want to proceed?",
+                    "actionName": "Isolate-MDEDevice",
+                    "runLabel": "Isolate Device"
+                  }
+                },
+                {
+                  "id": "action-av-scan",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🔍 Run Antivirus Scan",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Run-MDE-AVScan/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"deviceId\": \"{SelectedRemediationDevice}\", \"scanType\": \"Full\", \"comment\": \"AV scan triggered via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Run Antivirus Scan",
+                    "description": "## 🔍 Confirm Antivirus Scan\n\nYou are about to trigger a **full antivirus scan** on:\n\n**Device ID:** {SelectedRemediationDevice}\n\nThis will:\n- Run a full Microsoft Defender Antivirus scan\n- May impact device performance temporarily\n- Results will be available in MDE portal\n\nAre you sure you want to proceed?",
+                    "actionName": "Run-MDE-AVScan",
+                    "runLabel": "Run AV Scan"
+                  }
+                },
+                {
+                  "id": "action-collect-investigation",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "📋 Collect Investigation Package",
+                  "style": "secondary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Collect-MDE-Investigation/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"deviceId\": \"{SelectedRemediationDevice}\", \"comment\": \"Investigation package requested via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Collect Investigation Package",
+                    "description": "## 📋 Confirm Investigation Package Collection\n\nYou are about to collect an **investigation package** from:\n\n**Device ID:** {SelectedRemediationDevice}\n\nThis will:\n- Collect forensic artifacts from the device\n- Package will be available for download in MDE portal\n- Collection may take several minutes\n\nAre you sure you want to proceed?",
+                    "actionName": "Collect-MDE-Investigation",
+                    "runLabel": "Collect Package"
+                  }
+                },
+                {
+                  "id": "action-restrict-execution",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "⛔ Restrict App Execution",
+                  "style": "secondary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Restrict-MDEAppExecution/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"deviceId\": \"{SelectedRemediationDevice}\", \"comment\": \"App execution restricted via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Restrict App Execution",
+                    "description": "## ⛔ Confirm App Execution Restriction\n\nYou are about to **restrict application execution** on:\n\n**Device ID:** {SelectedRemediationDevice}\n\nThis will:\n- Only allow Microsoft-signed applications to run\n- Block all other executables\n- Require manual removal of restriction\n\n⚠️ **This may impact user productivity.** Are you sure you want to proceed?",
+                    "actionName": "Restrict-MDEAppExecution",
+                    "runLabel": "Restrict Apps"
+                  }
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedRemediationDevice",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "links - device actions",
+            "id": "48637e6e-e2eb-44a7-a92e-9bdf5a062195"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n### 🌐 IP Address Blocking"
+            },
+            "name": "text - ip blocking",
+            "id": "13aad706-4447-4c60-86b3-b9b972ec8ffc"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Malicious IPs - Select for Blocking\nSigninLogs\n| where TimeGenerated > ago(24h)\n| summarize \n    TotalAttempts = count(),\n    FailedAttempts = countif(ResultType != \"0\"),\n    SuccessfulAttempts = countif(ResultType == \"0\"),\n    TargetedUsers = dcount(UserPrincipalName),\n    RiskyAttempts = countif(RiskLevelDuringSignIn in (\"high\", \"medium\")),\n    Countries = make_set(tostring(LocationDetails.countryOrRegion), 3),\n    UserList = make_set(UserPrincipalName, 10)\n    by IPAddress\n| extend ThreatScore = (FailedAttempts / 5) + (TargetedUsers * 10) + (RiskyAttempts * 20) + iif(SuccessfulAttempts > 0 and FailedAttempts > 20, 100, 0)\n| where ThreatScore > 30\n| extend ThreatLevel = case(\n    SuccessfulAttempts > 0 and FailedAttempts > 20, \"🔴 CRITICAL - Likely Compromise\",\n    RiskyAttempts > 0, \"🔴 HIGH - Risk Detected\",\n    TargetedUsers > 20, \"🟠 HIGH - Password Spray\",\n    FailedAttempts > 100, \"🟠 HIGH - Brute Force\",\n    \"🟡 MEDIUM\"\n)\n| project ThreatLevel, IPAddress, ThreatScore, FailedAttempts, SuccessfulAttempts, TargetedUsers, Countries, UserList\n| order by ThreatScore desc\n| take 20",
+              "size": 0,
+              "title": "🌐 Select IP Address for Blocking (Click Row to Select)",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "exportFieldName": "IPAddress",
+              "exportParameterName": "SelectedBlockIP",
+              "exportDefaultValue": "",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ThreatLevel",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "CRITICAL",
+                          "representation": "red",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "HIGH",
+                          "representation": "orange",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "yellow",
+                          "text": "{0}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "ThreatScore",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "redGreen"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - block ips",
+            "id": "cd143979-cab1-4499-8576-bc2a19a51be2"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "#### Selected IP: **{SelectedBlockIP}**\n\n> Click on an IP above to select it for blocking."
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedBlockIP",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "text - selected ip",
+            "id": "bbc29d1c-04c9-4823-a92b-6b6ff96f287f"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "list",
+              "links": [
+                {
+                  "id": "action-add-ti-indicator",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🎯 Add to Threat Intelligence (Block)",
+                  "style": "primary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Add-ThreatIndicator/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"indicator\": \"{SelectedBlockIP}\", \"indicatorType\": \"ipv4\", \"action\": \"Block\", \"severity\": \"High\", \"description\": \"Blocked via Security Workbook - Attack Source\", \"expirationDateTime\": \"P30D\"}",
+                    "httpMethod": "POST",
+                    "title": "Add Threat Intelligence Indicator",
+                    "description": "## 🎯 Confirm Add to Threat Intelligence\n\nYou are about to add the following IP as a **threat indicator**:\n\n**IP Address:** {SelectedBlockIP}\n\nThis will:\n- Add IP to Sentinel Threat Intelligence\n- Block the IP across integrated security products\n- Indicator expires in 30 days\n\nAre you sure you want to proceed?",
+                    "actionName": "Add-ThreatIndicator",
+                    "runLabel": "Add Indicator"
+                  }
+                },
+                {
+                  "id": "action-block-conditional-access",
+                  "linkTarget": "ArmAction",
+                  "linkLabel": "🚫 Add to Blocked Locations (CA)",
+                  "style": "secondary",
+                  "linkIsContextBlade": true,
+                  "armActionContext": {
+                    "path": "{RemediationSubscription}/resourceGroups/{PlaybookResourceGroup}/providers/Microsoft.Logic/workflows/Add-BlockedLocation/triggers/manual/run",
+                    "headers": [],
+                    "params": [
+                      {
+                        "key": "api-version",
+                        "value": "2016-10-01"
+                      }
+                    ],
+                    "body": "{\"ipAddress\": \"{SelectedBlockIP}\", \"namedLocation\": \"Blocked-Attack-Sources\", \"reason\": \"Added via Security Workbook\"}",
+                    "httpMethod": "POST",
+                    "title": "Add to Blocked Named Location",
+                    "description": "## 🚫 Confirm Add to Blocked Location\n\nYou are about to add the following IP to a **blocked named location**:\n\n**IP Address:** {SelectedBlockIP}\n\nThis will:\n- Add IP to 'Blocked-Attack-Sources' named location\n- Conditional Access policies referencing this location will block access\n\nAre you sure you want to proceed?",
+                    "actionName": "Add-BlockedLocation",
+                    "runLabel": "Block Location"
+                  }
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "SelectedBlockIP",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "links - ip actions",
+            "id": "1e1c0f61-8a75-41a9-9c01-fee79bac9ea0"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n### 📜 Remediation Audit Log\n\nTrack all remediation actions triggered from this workbook."
+            },
+            "name": "text - audit header",
+            "id": "20c6bd33-8fc6-43d7-819d-0168a3e5fe4c"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Remediation Actions Audit Log\nAzureActivity\n| where TimeGenerated > ago(7d)\n| where OperationNameValue has_any (\n    \"Microsoft.Logic/workflows/triggers/run\",\n    \"Microsoft.Logic/workflows/runs\"\n)\n| where ResourceGroup =~ \"{PlaybookResourceGroup}\"\n| extend PlaybookName = tostring(split(Resource, \"/\")[0])\n| where PlaybookName has_any (\n    \"Disable-AADUser\", \"Reset-AADUserPassword\", \"Revoke-AADUserSessions\",\n    \"Block-AADSignIn\", \"Isolate-MDEDevice\", \"Run-MDE-AVScan\",\n    \"Collect-MDE-Investigation\", \"Add-ThreatIndicator\", \"Full-UserRemediation\"\n)\n| extend Status = case(\n    ActivityStatusValue == \"Success\", \"✅ Success\",\n    ActivityStatusValue == \"Failed\", \"❌ Failed\",\n    ActivityStatusValue == \"Started\", \"🔄 Running\",\n    \"⚪ Unknown\"\n)\n| project TimeGenerated, PlaybookName, Status, Caller, CorrelationId\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "📜 Recent Remediation Actions",
+              "timeContext": {
+                "durationMs": 604800000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Success",
+                          "representation": "green",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Failed",
+                          "representation": "red",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Running",
+                          "representation": "blue",
+                          "text": "{0}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "gray",
+                          "text": "{0}"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "query - remediation audit",
+            "id": "5055451d-0cef-43bb-8f64-009dfb38c2fe"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Remediation"
+      },
+      "name": "group - remediation",
+      "id": "2f0fbd52-19fd-4fdf-9506-e31621823628"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/ffd3e92d-f8fe-4d9d-b2cf-26d39ab4dce3/resourcegroups/rg1/providers/microsoft.operationalinsights/workspaces/ws-test"
+  ],
+  "fromTemplateId": "sentinel-UserWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "context": {
+    "ownerId": "/subscriptions/ffd3e92d-f8fe-4d9d-b2cf-26d39ab4dce3/resourcegroups/rg1/providers/microsoft.operationalinsights/workspaces/ws-test"
+  }
+}
