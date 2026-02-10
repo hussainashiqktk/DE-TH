@@ -1,0 +1,23 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/workbooks",
+      "name": "[concat('Test-Workbook-', uniqueString(resourceGroup().id))]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2020-02-12",
+      "properties": {
+        "displayName": "Test Workbook",
+        "serializedData": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":1,\"content\":{\"json\":\"Test Workbook Created via ARM\"},\"name\":\"text-1\"}],\"fallbackResourceIds\":[]}",
+        "sourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspace'))]",
+        "category": "workbook"
+      }
+    }
+  ]
+}
